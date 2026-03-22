@@ -1,0 +1,687 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONcalc — Calculadora de Obligaciones Negociables</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --border: #1e2530;
+    --accent: #00e5a0;
+    --accent2: #0095ff;
+    --warn: #ffb700;
+    --danger: #ff4d6d;
+    --text: #e8edf5;
+    --muted: #5a6478;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Bebas Neue', cursive;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,229,160,0.07) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(30,37,48,0.4) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(30,37,48,0.25) 40px);
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 36px; display: flex; align-items: center; gap: 16px;
+    background: rgba(10,12,15,0.95); backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: var(--display); font-size: 1.9rem; letter-spacing: 2px; color: var(--accent); }
+  .logo span { color: var(--text); }
+  .subtitle { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; border-left: 1px solid var(--border); padding-left: 16px; }
+  .badge { margin-left: auto; background: rgba(0,229,160,0.08); border: 1px solid rgba(0,229,160,0.25); color: var(--accent); font-family: var(--mono); font-size: 0.58rem; padding: 4px 10px; letter-spacing: 2px; }
+  .db-status { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .db-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--muted); }
+  .db-dot.ok { background: var(--accent); animation: blink 2s infinite; }
+  @keyframes blink { 0%,100%{opacity:1} 50%{opacity:.4} }
+
+  main { max-width: 1300px; margin: 0 auto; padding: 32px 36px; display: grid; grid-template-columns: 360px 1fr; gap: 20px; align-items: start; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); }
+  .panel-header { padding: 13px 18px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .panel-title { font-family: var(--mono); font-size: 0.6rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+  .dot.blue { background: var(--accent2); }
+  .dot.warn { background: var(--warn); }
+  .panel-body { padding: 18px; }
+
+  /* Search */
+  .search-wrap { position: relative; }
+  .search-wrap input { padding-right: 36px; }
+  .search-clear { position: absolute; right: 10px; top: 50%; transform: translateY(-50%); background: none; border: none; color: var(--muted); cursor: pointer; font-size: 1rem; padding: 0; display: none; }
+
+  /* ON list */
+  .on-list { max-height: 320px; overflow-y: auto; scrollbar-width: thin; scrollbar-color: var(--border) transparent; margin-top: 10px; }
+  .on-item {
+    padding: 10px 12px; border-bottom: 1px solid rgba(30,37,48,0.6);
+    cursor: pointer; transition: background 0.15s; display: flex; align-items: center; gap: 10px;
+  }
+  .on-item:last-child { border-bottom: none; }
+  .on-item:hover { background: rgba(255,255,255,0.03); }
+  .on-item.active { background: rgba(0,229,160,0.06); border-left: 2px solid var(--accent); padding-left: 10px; }
+  .on-ticker { font-family: var(--mono); font-size: 0.8rem; color: var(--text); font-weight: 500; min-width: 72px; }
+  .on-info { flex: 1; min-width: 0; }
+  .on-emisor { font-size: 0.7rem; color: var(--muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .on-moneda { font-family: var(--mono); font-size: 0.55rem; padding: 2px 5px; background: rgba(0,149,255,0.1); color: var(--accent2); border-radius: 0; }
+
+  .sector-sep { padding: 6px 12px; background: rgba(0,0,0,0.3); font-family: var(--mono); font-size: 0.5rem; letter-spacing: 2px; text-transform: uppercase; color: var(--accent2); border-bottom: 1px solid var(--border); }
+
+  /* Form */
+  .field { margin-bottom: 14px; }
+  label { display: block; font-family: var(--mono); font-size: 0.57rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 5px; }
+  input[type="number"], input[type="date"], input[type="text"], select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+    padding: 9px 11px; outline: none; transition: border-color 0.2s; appearance: none;
+  }
+  input:focus, select:focus { border-color: var(--accent); }
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+
+  .btn { width: 100%; padding: 13px; border: none; cursor: pointer; font-family: var(--display); font-size: 1.05rem; letter-spacing: 3px; transition: all 0.2s; display: flex; align-items: center; justify-content: center; gap: 8px; }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover:not(:disabled) { background: #00ffb3; }
+  .btn-primary:disabled { background: #1a2e25; color: var(--muted); cursor: not-allowed; }
+
+  /* Metrics */
+  .metrics { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); border: 1px solid var(--border); margin-bottom: 20px; }
+  .metric { background: var(--surface); padding: 18px 14px; position: relative; overflow: hidden; }
+  .metric::before { content:''; position:absolute; top:0;left:0;right:0; height:2px; background:var(--accent); opacity:0; transition:opacity .3s; }
+  .metric.active::before { opacity:1; }
+  .metric.blue::before { background:var(--accent2); }
+  .metric.warn::before { background:var(--warn); }
+  .metric-label { font-family:var(--mono); font-size:0.52rem; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin-bottom:7px; }
+  .metric-value { font-family:var(--display); font-size:1.75rem; line-height:1; color:var(--text); transition:color .3s; }
+  .metric-value.green { color:var(--accent); }
+  .metric-value.blue  { color:var(--accent2); }
+  .metric-value.warn  { color:var(--warn); }
+  .metric-sub { font-family:var(--mono); font-size:0.52rem; color:var(--muted); margin-top:4px; }
+
+  /* Flows */
+  .flows-table { width:100%; border-collapse:collapse; font-family:var(--mono); font-size:0.72rem; }
+  .flows-table th { text-align:left; padding:7px 11px; border-bottom:1px solid var(--border); color:var(--muted); font-size:0.57rem; letter-spacing:2px; text-transform:uppercase; font-weight:400; }
+  .flows-table td { padding:7px 11px; border-bottom:1px solid rgba(30,37,48,0.5); }
+  .flows-table tr:last-child td { border-bottom:none; }
+  .flows-table tr:hover td { background:rgba(255,255,255,0.02); }
+  .scroll-body { max-height:220px; overflow-y:auto; scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+
+  /* Chart */
+  .chart-container { height:100px; padding:12px 18px 4px; display:flex; align-items:flex-end; gap:3px; }
+  .bar-group { flex:1; display:flex; flex-direction:column; align-items:center; gap:1px; height:100%; justify-content:flex-end; }
+  .bar { width:100%; min-height:2px; transition:height .5s ease; }
+  .bar-amort { background:var(--accent2); opacity:.7; }
+  .bar-interest { background:var(--accent); opacity:.7; }
+  .bar-label { font-family:var(--mono); font-size:0.42rem; color:var(--muted); text-align:center; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; max-width:100%; margin-top:2px; }
+
+  /* ON detail box */
+  .detail-box { background:var(--bg); border:1px solid var(--border); padding:14px; margin-bottom:16px; }
+  .detail-grid { display:grid; grid-template-columns:1fr 1fr; gap:4px 16px; }
+  .detail-row { display:flex; justify-content:space-between; padding:3px 0; border-bottom:1px solid rgba(30,37,48,0.4); font-size:0.68rem; }
+  .detail-key { color:var(--muted); font-family:var(--mono); }
+  .detail-val { color:var(--text); font-family:var(--mono); font-weight:500; }
+  .obs-box { margin-top:10px; padding:8px 10px; background:rgba(255,183,0,0.04); border:1px solid rgba(255,183,0,0.15); color:#8a9ab0; font-size:0.64rem; line-height:1.6; }
+
+  /* Toast */
+  #resultToast {
+    position:fixed; bottom:28px; right:28px; z-index:9999; width:320px;
+    background:var(--surface); border:1px solid var(--accent);
+    box-shadow:0 0 0 1px rgba(0,229,160,0.12), 0 20px 50px rgba(0,0,0,0.6), 0 0 30px rgba(0,229,160,0.07);
+    transform:translateX(115%); opacity:0; transition:transform .45s cubic-bezier(.22,1,.36,1), opacity .3s ease;
+    pointer-events:none;
+  }
+  #resultToast.show { transform:translateX(0); opacity:1; pointer-events:auto; }
+  .toast-header { display:flex; align-items:center; gap:10px; padding:11px 14px; border-bottom:1px solid var(--border); background:linear-gradient(90deg,rgba(0,229,160,0.07),transparent); }
+  .toast-check { width:26px;height:26px; border-radius:50%; border:2px solid var(--accent); display:flex;align-items:center;justify-content:center; flex-shrink:0; }
+  .toast-check svg { opacity:0; transform:scale(.4); transition:all .3s ease .2s; }
+  #resultToast.show .toast-check svg { opacity:1; transform:scale(1); }
+  .toast-title { font-family:var(--display); font-size:.95rem; letter-spacing:2px; color:var(--accent); }
+  .toast-close { margin-left:auto; background:none; border:none; color:var(--muted); font-size:.9rem; cursor:pointer; }
+  .toast-body { padding:12px 14px; display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .toast-metric { background:var(--bg); border:1px solid var(--border); padding:9px 11px; position:relative; overflow:hidden; }
+  .toast-metric::before { content:''; position:absolute; left:0;top:0;bottom:0; width:2px; background:var(--accent); }
+  .toast-metric.blue::before { background:var(--accent2); }
+  .toast-metric.warn::before { background:var(--warn); }
+  .toast-metric-label { font-family:var(--mono); font-size:0.5rem; letter-spacing:1px; text-transform:uppercase; color:var(--muted); margin-bottom:4px; }
+  .toast-metric-val { font-family:var(--display); font-size:1.15rem; line-height:1; }
+  .toast-metric-val.green { color:var(--accent); }
+  .toast-metric-val.blue  { color:var(--accent2); }
+  .toast-metric-val.warn  { color:var(--warn); }
+  .toast-footer { padding:7px 14px 10px; font-family:var(--mono); font-size:0.55rem; color:var(--muted); border-top:1px solid var(--border); display:flex; align-items:center; gap:6px; }
+  .toast-bar { flex:1; height:2px; background:var(--border); overflow:hidden; }
+  .toast-bar-fill { height:100%; background:var(--accent); transform:translateX(-100%); transition:none; }
+  #resultToast.show .toast-bar-fill { transform:translateX(0); transition:transform 4s linear .3s; }
+  .toast-scan { position:absolute; inset:0; background:linear-gradient(to bottom,transparent 40%,rgba(0,229,160,0.03) 50%,transparent 60%); animation:scan 2.5s linear infinite; pointer-events:none; }
+  @keyframes scan { from{transform:translateY(-100%)} to{transform:translateY(100%)} }
+
+  .placeholder { text-align:center; color:var(--muted); font-family:var(--mono); font-size:0.7rem; padding:20px; font-style:italic; }
+  .spinner { display:inline-block; width:12px;height:12px; border:2px solid rgba(0,229,160,0.2); border-top-color:var(--accent); border-radius:50%; animation:spin .8s linear infinite; }
+  @keyframes spin { to{transform:rotate(360deg)} }
+  .fade-in { animation:fadeIn .35s ease; }
+  @keyframes fadeIn { from{opacity:0;transform:translateY(3px)} to{opacity:1} }
+
+  .section-divider { margin:14px 0 10px; border:none; border-top:1px solid var(--border); position:relative; }
+  .section-divider::after { content:attr(data-label); position:absolute; top:-8px; left:0; background:var(--surface); padding-right:8px; font-family:var(--mono); font-size:0.52rem; letter-spacing:2px; color:var(--muted); text-transform:uppercase; }
+
+  .no-db-warning { background:rgba(255,183,0,0.07); border:1px solid rgba(255,183,0,0.25); padding:12px 16px; font-family:var(--mono); font-size:0.65rem; color:var(--warn); line-height:1.7; }
+
+  @media(max-width:1050px) { main{grid-template-columns:1fr;} .metrics{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ON<span>calc</span></div>
+  <div class="subtitle">Calculadora de Obligaciones Negociables · ARG</div>
+  <div class="db-status">
+    <div class="db-dot" id="dbDot"></div>
+    <span id="dbStatus">Cargando base de datos...</span>
+  </div>
+  <div class="badge">GRATIS · <span id="badgeCount">—</span> ONs</div>
+</header>
+
+<main>
+  <!-- LEFT -->
+  <div style="display:flex;flex-direction:column;gap:16px;">
+
+    <!-- Buscador -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="dot blue"></div>
+        <div class="panel-title">Base de datos de ONs</div>
+        <div style="margin-left:auto;font-family:var(--mono);font-size:0.55rem;color:var(--muted)" id="dbCount">cargando...</div>
+      </div>
+      <div class="panel-body" style="padding-bottom:0;">
+        <div class="search-wrap">
+          <input type="text" id="searchInput" placeholder="Buscar ticker o emisor..." oninput="filtrarONs()" style="text-transform:uppercase;">
+          <button class="search-clear" id="searchClear" onclick="limpiarBusqueda()">✕</button>
+        </div>
+      </div>
+      <div class="on-list" id="onList">
+        <div class="placeholder"><span class="spinner"></span> Cargando ONs...</div>
+      </div>
+    </div>
+
+    <!-- Parámetros -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="dot"></div>
+        <div class="panel-title">Parámetros de la operación</div>
+      </div>
+      <div class="panel-body">
+
+        <div id="onDetailBox" style="display:none;"></div>
+
+        <hr class="section-divider" data-label="Operación">
+
+        <div class="row2">
+          <div class="field">
+            <label>Precio de compra (%VN)</label>
+            <input type="number" id="precio" value="98.5" step="0.01">
+          </div>
+          <div class="field">
+            <label>Valor nominal (VN)</label>
+            <input type="number" id="valorNominal" value="1000" step="100">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Fecha de compra</label>
+            <input type="date" id="fechaCompra">
+          </div>
+          <div class="field">
+            <label>Fecha vencimiento</label>
+            <input type="date" id="fechaVenc" readonly style="opacity:.6;">
+          </div>
+        </div>
+
+        <hr class="section-divider" data-label="Gastos">
+
+        <div class="row2">
+          <div class="field">
+            <label>Comisión broker (%)</label>
+            <input type="number" id="comision" value="0.6" step="0.01">
+          </div>
+          <div class="field">
+            <label>Otros gastos (%)</label>
+            <input type="number" id="gastos" value="0" step="0.01">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" id="btnCalc" onclick="calcular()" disabled>
+          CALCULAR
+        </button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT -->
+  <div style="display:flex;flex-direction:column;gap:18px;">
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric active">
+        <div class="metric-label">TIR / Yield to Maturity</div>
+        <div class="metric-value green" id="v-tir">—</div>
+        <div class="metric-sub">Rendimiento efectivo anual</div>
+      </div>
+      <div class="metric blue">
+        <div class="metric-label">Precio limpio (%VN)</div>
+        <div class="metric-value blue" id="v-precio">—</div>
+        <div class="metric-sub" id="v-precioSucio">Precio sucio: —</div>
+      </div>
+      <div class="metric warn">
+        <div class="metric-label">Duration Modificada</div>
+        <div class="metric-value warn" id="v-dur">—</div>
+        <div class="metric-sub" id="v-durMac">Macaulay: —</div>
+      </div>
+      <div class="metric">
+        <div class="metric-label">Spread / Convexidad</div>
+        <div class="metric-value" id="v-spread">—</div>
+        <div class="metric-sub" id="v-convex">Convexidad: —</div>
+      </div>
+    </div>
+
+    <!-- Gráfico + tabla -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="dot"></div>
+        <div class="panel-title">Flujos de fondos proyectados</div>
+        <div style="margin-left:auto;font-family:var(--mono);font-size:0.52rem;color:var(--muted);">
+          <span style="color:var(--accent2)">■</span> Amort &nbsp;
+          <span style="color:var(--accent)">■</span> Interés
+        </div>
+      </div>
+      <div class="chart-container" id="chartContainer">
+        <div class="placeholder" style="width:100%">Los flujos aparecerán aquí tras calcular</div>
+      </div>
+      <div class="panel-body" style="padding-top:0;">
+        <div class="scroll-body">
+          <table class="flows-table">
+            <thead>
+              <tr>
+                <th>#</th><th>Fecha</th><th>Días</th>
+                <th>Amortización</th><th>Interés</th>
+                <th>Total</th><th>Saldo VN</th><th>VP Flujo</th>
+              </tr>
+            </thead>
+            <tbody id="flowsBody">
+              <tr><td colspan="8" class="placeholder">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Toast -->
+<div id="resultToast">
+  <div class="toast-scan"></div>
+  <div class="toast-header">
+    <div class="toast-check">
+      <svg width="13" height="13" viewBox="0 0 13 13" fill="none">
+        <polyline points="2,6.5 5.5,10 11,3" stroke="#00e5a0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="toast-title">CÁLCULO LISTO</div>
+    <button class="toast-close" onclick="cerrarToast()">✕</button>
+  </div>
+  <div class="toast-body">
+    <div class="toast-metric">
+      <div class="toast-metric-label">TIR anual</div>
+      <div class="toast-metric-val green" id="t-tir">—</div>
+    </div>
+    <div class="toast-metric blue">
+      <div class="toast-metric-label">Precio limpio</div>
+      <div class="toast-metric-val blue" id="t-precio">—</div>
+    </div>
+    <div class="toast-metric warn">
+      <div class="toast-metric-label">Duration mod.</div>
+      <div class="toast-metric-val warn" id="t-dur">—</div>
+    </div>
+    <div class="toast-metric">
+      <div class="toast-metric-label">Cupones</div>
+      <div class="toast-metric-val" id="t-flujos">—</div>
+    </div>
+  </div>
+  <div class="toast-footer">
+    <span id="t-ticker">—</span> · <span id="t-time">—</span>
+    <div class="toast-bar"><div class="toast-bar-fill"></div></div>
+  </div>
+</div>
+
+<script>
+// ─── Config ───────────────────────────────────────────────────────────────────
+const GITHUB_RAW = 'https://raw.githubusercontent.com/richardyag/on-data/main/ons.json';
+
+// ─── Estado ───────────────────────────────────────────────────────────────────
+let dbONs = {};          // todos los datos del repo
+let onActiva = null;     // ON seleccionada
+let flujos = [];
+let toastTimer = null;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.onload = async () => {
+  const hoy = new Date();
+  document.getElementById('fechaCompra').value = hoy.toISOString().split('T')[0];
+  await cargarDesdeGitHub();
+};
+
+// ─── Cargar base de datos desde GitHub ───────────────────────────────────────
+async function cargarDesdeGitHub() {
+  const dot    = document.getElementById('dbDot');
+  const status = document.getElementById('dbStatus');
+  const list   = document.getElementById('onList');
+
+  try {
+    const resp = await fetch(GITHUB_RAW + '?t=' + Date.now());
+    if (!resp.ok) throw new Error('HTTP ' + resp.status);
+
+    const data = await resp.json();
+    dbONs = data.ons || {};
+
+    const total = Object.keys(dbONs).length;
+
+    dot.className = 'db-dot ok';
+    status.textContent = `${total} ONs · Actualizado ${new Date(data.version).toLocaleDateString('es-AR')}`;
+    document.getElementById('dbCount').textContent = total + ' instrumentos';
+    document.getElementById('badgeCount').textContent = total;
+
+    renderListaONs(Object.values(dbONs));
+
+  } catch (e) {
+    dot.className = 'db-dot';
+    dot.style.background = 'var(--danger)';
+    status.textContent = 'Sin conexión a la base de datos';
+    list.innerHTML = `
+      <div style="padding:16px;">
+        <div class="no-db-warning">
+          ⚠ No se pudo cargar la base de datos desde GitHub.<br><br>
+          Esto puede pasar si el repositorio <strong>richardyag/on-data</strong> aún no tiene datos cargados.<br><br>
+          Usá el panel de administración para cargar las ONs primero.
+        </div>
+      </div>`;
+  }
+}
+
+// ─── Render lista ─────────────────────────────────────────────────────────────
+function renderListaONs(lista) {
+  const container = document.getElementById('onList');
+  if (lista.length === 0) {
+    container.innerHTML = '<div class="placeholder">No se encontraron resultados</div>';
+    return;
+  }
+
+  // Agrupar por sector
+  const porSector = {};
+  lista.forEach(on => {
+    const s = on.sector || 'Otros';
+    if (!porSector[s]) porSector[s] = [];
+    porSector[s].push(on);
+  });
+
+  container.innerHTML = '';
+  for (const [sector, ons] of Object.entries(porSector)) {
+    const sep = document.createElement('div');
+    sep.className = 'sector-sep';
+    sep.textContent = sector;
+    container.appendChild(sep);
+
+    ons.forEach(on => {
+      const el = document.createElement('div');
+      el.className = 'on-item' + (onActiva?.ticker === on.ticker ? ' active' : '');
+      el.id = 'item-' + on.ticker;
+      el.onclick = () => seleccionarON(on);
+      el.innerHTML = `
+        <div class="on-ticker">${on.ticker}</div>
+        <div class="on-info">
+          <div class="on-emisor">${on.emisor}</div>
+        </div>
+        <span class="on-moneda">${on.moneda}</span>
+      `;
+      container.appendChild(el);
+    });
+  }
+}
+
+// ─── Filtrar ──────────────────────────────────────────────────────────────────
+function filtrarONs() {
+  const q = document.getElementById('searchInput').value.trim().toUpperCase();
+  document.getElementById('searchClear').style.display = q ? 'block' : 'none';
+
+  const lista = Object.values(dbONs).filter(on =>
+    on.ticker.includes(q) ||
+    (on.emisor || '').toUpperCase().includes(q) ||
+    (on.sector || '').toUpperCase().includes(q)
+  );
+  renderListaONs(lista);
+}
+
+function limpiarBusqueda() {
+  document.getElementById('searchInput').value = '';
+  document.getElementById('searchClear').style.display = 'none';
+  renderListaONs(Object.values(dbONs));
+}
+
+// ─── Seleccionar ON ───────────────────────────────────────────────────────────
+function seleccionarON(on) {
+  // Quitar activo anterior
+  document.querySelectorAll('.on-item.active').forEach(el => el.classList.remove('active'));
+  const el = document.getElementById('item-' + on.ticker);
+  if (el) el.classList.add('active');
+
+  onActiva = on;
+
+  // Poblar fecha de vencimiento (readonly)
+  document.getElementById('fechaVenc').value = on.fechaVencimiento || '';
+
+  // Mostrar detalle
+  const box = document.getElementById('onDetailBox');
+  box.style.display = 'block';
+  box.innerHTML = `
+    <div class="detail-box fade-in">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+        <span style="font-family:var(--display);font-size:1.3rem;color:var(--accent)">${on.ticker}</span>
+        <span style="font-family:var(--mono);font-size:0.6rem;color:var(--muted)">${on.emisor}</span>
+        <span class="on-moneda" style="margin-left:auto">${on.moneda}</span>
+      </div>
+      <div class="detail-grid">
+        <div class="detail-row"><span class="detail-key">Cupón</span><span class="detail-val">${on.tasaCupon}% anual</span></div>
+        <div class="detail-row"><span class="detail-key">Frecuencia</span><span class="detail-val">${['','Anual','Semestral','','Trimestral'][on.frecuencia] || on.frecuencia + 'x/año'}</span></div>
+        <div class="detail-row"><span class="detail-key">Amortización</span><span class="detail-val">${on.tipoAmort === 'bullet' ? 'Bullet' : 'Lineal'}</span></div>
+        <div class="detail-row"><span class="detail-key">Precio ref.</span><span class="detail-val">${on.precioMercado}% VN</span></div>
+        <div class="detail-row"><span class="detail-key">Vencimiento</span><span class="detail-val">${on.fechaVencimiento}</span></div>
+        <div class="detail-row"><span class="detail-key">Ley</span><span class="detail-val">${on.ley || '—'}</span></div>
+        ${on.calificacion ? `<div class="detail-row"><span class="detail-key">Calificación</span><span class="detail-val">${on.calificacion}</span></div>` : ''}
+        <div class="detail-row"><span class="detail-key">Sector</span><span class="detail-val">${on.sector || '—'}</span></div>
+      </div>
+      ${on.observaciones ? `<div class="obs-box">${on.observaciones}</div>` : ''}
+    </div>
+  `;
+
+  // Auto-completar precio de referencia
+  document.getElementById('precio').value = on.precioMercado || 100;
+  document.getElementById('btnCalc').disabled = false;
+}
+
+// ─── Calcular ─────────────────────────────────────────────────────────────────
+function calcular() {
+  if (!onActiva) return;
+
+  const fechaCompra = new Date(document.getElementById('fechaCompra').value);
+  const fechaVenc   = new Date(onActiva.fechaVencimiento);
+  const VN          = parseFloat(document.getElementById('valorNominal').value);
+  const precio      = parseFloat(document.getElementById('precio').value) / 100;
+  const tasaCupon   = onActiva.tasaCupon / 100;
+  const frecuencia  = onActiva.frecuencia;
+  const tipoAmort   = onActiva.tipoAmort;
+  const comision    = parseFloat(document.getElementById('comision').value) / 100;
+  const gastos      = parseFloat(document.getElementById('gastos').value) / 100;
+
+  if (fechaVenc <= fechaCompra) {
+    alert('La ON ya venció o la fecha es incorrecta.');
+    return;
+  }
+
+  const mesesCupon = 12 / frecuencia;
+  const tasaPeriodica = tasaCupon / frecuencia;
+
+  // Generar cupones retroactivamente desde vencimiento
+  flujos = [];
+  const cupones = [];
+  let fc = new Date(fechaVenc);
+  while (fc > fechaCompra) {
+    cupones.unshift(new Date(fc));
+    fc = new Date(fc);
+    fc.setMonth(fc.getMonth() - mesesCupon);
+  }
+
+  if (cupones.length === 0) { alert('No hay cupones futuros'); return; }
+
+  let saldoVN = VN;
+  const amortLineal = tipoAmort === 'lineal' ? VN / cupones.length : 0;
+
+  cupones.forEach((fecha, i) => {
+    const dias = Math.round((fecha - fechaCompra) / 86400000);
+    let amort = 0;
+    if (tipoAmort === 'bullet' && i === cupones.length - 1) amort = saldoVN;
+    else if (tipoAmort === 'lineal') amort = amortLineal;
+    const interes = saldoVN * tasaPeriodica;
+    saldoVN -= amort;
+    flujos.push({ num: i+1, fecha: fecha.toISOString().split('T')[0], dias, amort, interes, total: amort+interes, saldo: saldoVN, vp: 0 });
+  });
+
+  // TIR — Newton-Raphson
+  const inversion = -(VN * precio * (1 + comision + gastos));
+  const cfs = [inversion, ...flujos.map(f => f.total)];
+  const ts  = [0, ...flujos.map(f => f.dias / 365)];
+
+  let tir = 0.1;
+  for (let it = 0; it < 300; it++) {
+    let f = 0, df = 0;
+    for (let j = 0; j < cfs.length; j++) {
+      const d = Math.pow(1 + tir, ts[j]);
+      f  += cfs[j] / d;
+      df -= ts[j] * cfs[j] / (d * (1 + tir));
+    }
+    const delta = f / df;
+    tir -= delta;
+    if (Math.abs(delta) < 1e-9) break;
+  }
+
+  // VP, Duration, Convexidad
+  let sumVP = 0, sumDur = 0, conv = 0;
+  flujos.forEach(fl => {
+    const t = fl.dias / 365;
+    fl.vp = fl.total / Math.pow(1 + tir, t);
+    sumVP  += fl.vp;
+    sumDur += t * fl.vp;
+  });
+  const durMac = sumDur / sumVP;
+  const durMod = durMac / (1 + tir / frecuencia);
+  flujos.forEach(fl => {
+    const t = fl.dias / 365;
+    conv += fl.vp * t * (t + 1/frecuencia);
+  });
+  conv = conv / (sumVP * Math.pow(1 + tir/frecuencia, 2));
+
+  // Interés devengado
+  const prevCupon = new Date(fechaCompra);
+  prevCupon.setMonth(prevCupon.getMonth() - mesesCupon);
+  const diasDev = Math.round((fechaCompra - prevCupon) / 86400000);
+  const intDev  = (tasaCupon / frecuencia) * (diasDev / (365 / frecuencia));
+  const precioSucio = precio + intDev;
+
+  // Actualizar métricas
+  document.getElementById('v-tir').textContent      = (tir * 100).toFixed(2) + '%';
+  document.getElementById('v-precio').textContent   = (precio * 100).toFixed(2) + '%';
+  document.getElementById('v-precioSucio').textContent = 'Precio sucio: ' + (precioSucio * 100).toFixed(2) + '%';
+  document.getElementById('v-dur').textContent      = durMod.toFixed(2) + ' años';
+  document.getElementById('v-durMac').textContent   = 'Macaulay: ' + durMac.toFixed(2) + ' años';
+  document.getElementById('v-convex').textContent   = 'Convexidad: ' + conv.toFixed(2);
+  document.getElementById('v-spread').textContent   = ((tir * 100) - 4.8).toFixed(0) + ' bps';
+
+  renderTabla();
+  renderGrafico();
+  mostrarToast({ tir, durMod, precio, numFlujos: flujos.length });
+}
+
+// ─── Tabla ────────────────────────────────────────────────────────────────────
+function renderTabla() {
+  const body = document.getElementById('flowsBody');
+  body.innerHTML = '';
+  const sym = (onActiva?.moneda === 'ARS') ? '$' : 'U$S';
+  flujos.forEach(fl => {
+    const tr = document.createElement('tr');
+    tr.className = 'fade-in';
+    tr.innerHTML = `
+      <td>${fl.num}</td>
+      <td>${fl.fecha}</td>
+      <td>${fl.dias}</td>
+      <td style="color:var(--accent2)">${fl.amort > 0 ? sym + ' ' + fl.amort.toFixed(2) : '—'}</td>
+      <td style="color:var(--accent)">${sym} ${fl.interes.toFixed(2)}</td>
+      <td style="color:var(--warn);font-weight:500">${sym} ${fl.total.toFixed(2)}</td>
+      <td style="color:var(--muted)">${sym} ${fl.saldo.toFixed(2)}</td>
+      <td>${sym} ${fl.vp.toFixed(2)}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+// ─── Gráfico ──────────────────────────────────────────────────────────────────
+function renderGrafico() {
+  const c = document.getElementById('chartContainer');
+  if (!flujos.length) return;
+  const maxT = Math.max(...flujos.map(f => f.total));
+  let html = '';
+  flujos.forEach(fl => {
+    const pi = (fl.interes / maxT) * 88;
+    const pa = (fl.amort   / maxT) * 88;
+    html += `<div class="bar-group">
+      <div class="bar bar-interest" style="height:${pi}%"></div>
+      <div class="bar bar-amort"    style="height:${pa}%"></div>
+      <div class="bar-label">${fl.fecha.slice(2,7)}</div>
+    </div>`;
+  });
+  c.innerHTML = html;
+}
+
+// ─── Toast ────────────────────────────────────────────────────────────────────
+function mostrarToast({ tir, durMod, precio, numFlujos }) {
+  const toast = document.getElementById('resultToast');
+  document.getElementById('t-tir').textContent    = (tir * 100).toFixed(2) + '%';
+  document.getElementById('t-precio').textContent = (precio * 100).toFixed(2) + '% VN';
+  document.getElementById('t-dur').textContent    = durMod.toFixed(2) + ' años';
+  document.getElementById('t-flujos').textContent = numFlujos + ' cupones';
+  document.getElementById('t-ticker').textContent = onActiva?.ticker || '—';
+  document.getElementById('t-time').textContent   = new Date().toLocaleTimeString('es-AR');
+
+  const fill = toast.querySelector('.toast-bar-fill');
+  fill.style.transition = 'none';
+  fill.style.transform  = 'translateX(-100%)';
+  void fill.offsetWidth;
+
+  toast.classList.add('show');
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(cerrarToast, 4500);
+}
+
+function cerrarToast() {
+  document.getElementById('resultToast').classList.remove('show');
+  if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+}
+</script>
+</body>
+</html>

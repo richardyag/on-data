@@ -1,0 +1,1424 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Calculadora ON — Obligaciones Negociables</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --surface2: #181c22;
+    --border: #1e2530;
+    --accent: #00e5a0;
+    --accent2: #0095ff;
+    --warn: #ffb700;
+    --danger: #ff4d6d;
+    --text: #e8edf5;
+    --muted: #5a6478;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Bebas Neue', cursive;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    min-height: 100vh;
+    background-image:
+      radial-gradient(ellipse 80% 50% at 50% -20%, rgba(0,229,160,0.07) 0%, transparent 60%),
+      repeating-linear-gradient(0deg, transparent, transparent 39px, rgba(30,37,48,0.5) 40px),
+      repeating-linear-gradient(90deg, transparent, transparent 39px, rgba(30,37,48,0.3) 40px);
+  }
+
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 20px 40px;
+    display: flex;
+    align-items: center;
+    gap: 20px;
+    background: rgba(10,12,15,0.9);
+    backdrop-filter: blur(10px);
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+
+  .logo {
+    font-family: var(--display);
+    font-size: 2rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .logo span { color: var(--text); }
+
+  .subtitle {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    color: var(--muted);
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    border-left: 1px solid var(--border);
+    padding-left: 20px;
+  }
+
+  .badge {
+    margin-left: auto;
+    background: rgba(0,229,160,0.1);
+    border: 1px solid rgba(0,229,160,0.3);
+    color: var(--accent);
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    padding: 4px 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+  }
+
+  main {
+    max-width: 1300px;
+    margin: 0 auto;
+    padding: 40px;
+    display: grid;
+    grid-template-columns: 380px 1fr;
+    gap: 24px;
+    align-items: start;
+  }
+
+  .panel {
+    background: var(--surface);
+    border: 1px solid var(--border);
+  }
+
+  .panel-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-title {
+    font-family: var(--mono);
+    font-size: 0.65rem;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    background: var(--accent);
+    flex-shrink: 0;
+  }
+  .dot.blue { background: var(--accent2); }
+  .dot.warn { background: var(--warn); }
+
+  .panel-body { padding: 20px; }
+
+  /* Form */
+  .field { margin-bottom: 16px; }
+
+  label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 6px;
+  }
+
+  input, select {
+    width: 100%;
+    background: var(--bg);
+    border: 1px solid var(--border);
+    color: var(--text);
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    padding: 10px 12px;
+    outline: none;
+    transition: border-color 0.2s;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  input:focus, select:focus { border-color: var(--accent); }
+
+  select option { background: var(--surface); }
+
+  .row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    cursor: pointer;
+    font-family: var(--display);
+    font-size: 1.1rem;
+    letter-spacing: 3px;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: var(--bg);
+  }
+  .btn-primary:hover { background: #00ffb3; }
+  .btn-primary:disabled { background: #1a2e25; color: var(--muted); cursor: not-allowed; }
+
+  .btn-secondary {
+    background: transparent;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    padding: 10px;
+    margin-top: 8px;
+  }
+  .btn-secondary:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .btn-ai {
+    background: linear-gradient(135deg, #001a33, #001a1a);
+    border: 1px solid rgba(0,149,255,0.4);
+    color: var(--accent2);
+    font-size: 0.7rem;
+    font-family: var(--mono);
+    letter-spacing: 2px;
+    padding: 10px;
+    margin-top: 8px;
+    width: 100%;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .btn-ai:hover { border-color: var(--accent2); background: rgba(0,149,255,0.1); }
+
+  /* Right panel */
+  .right-col { display: flex; flex-direction: column; gap: 20px; }
+
+  /* Metrics grid */
+  .metrics {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 1px;
+    background: var(--border);
+    border: 1px solid var(--border);
+  }
+
+  .metric {
+    background: var(--surface);
+    padding: 20px 16px;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .metric::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    background: var(--accent);
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+  .metric.active::before { opacity: 1; }
+  .metric.blue::before { background: var(--accent2); }
+  .metric.warn::before { background: var(--warn); }
+  .metric.danger::before { background: var(--danger); }
+
+  .metric-label {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .metric-value {
+    font-family: var(--display);
+    font-size: 1.8rem;
+    line-height: 1;
+    color: var(--text);
+    transition: color 0.3s;
+  }
+
+  .metric-value.green { color: var(--accent); }
+  .metric-value.blue { color: var(--accent2); }
+  .metric-value.warn { color: var(--warn); }
+
+  .metric-sub {
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    color: var(--muted);
+    margin-top: 4px;
+  }
+
+  /* Cash flows table */
+  .flows-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+  }
+
+  .flows-table th {
+    text-align: left;
+    padding: 8px 12px;
+    border-bottom: 1px solid var(--border);
+    color: var(--muted);
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    font-weight: 400;
+  }
+
+  .flows-table td {
+    padding: 8px 12px;
+    border-bottom: 1px solid rgba(30,37,48,0.5);
+    color: var(--text);
+  }
+
+  .flows-table tr:last-child td { border-bottom: none; }
+  .flows-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .tag {
+    display: inline-block;
+    padding: 2px 6px;
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+  }
+
+  .tag-amort { background: rgba(0,149,255,0.15); color: var(--accent2); }
+  .tag-interest { background: rgba(0,229,160,0.15); color: var(--accent); }
+  .tag-total { background: rgba(255,183,0,0.15); color: var(--warn); }
+
+  /* AI analysis box */
+  .ai-box {
+    background: var(--surface);
+    border: 1px solid rgba(0,149,255,0.2);
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .ai-header {
+    background: linear-gradient(135deg, rgba(0,149,255,0.1), rgba(0,229,160,0.05));
+    border-bottom: 1px solid rgba(0,149,255,0.2);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .ai-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--accent2);
+    animation: pulse 2s infinite;
+  }
+
+  @keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+  }
+
+  .ai-title {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    letter-spacing: 2px;
+    color: var(--accent2);
+    text-transform: uppercase;
+  }
+
+  .ai-body {
+    padding: 16px;
+    font-family: var(--sans);
+    font-size: 0.82rem;
+    line-height: 1.7;
+    color: #8da0b8;
+    min-height: 80px;
+  }
+
+  .ai-body p { margin-bottom: 8px; }
+  .ai-body strong { color: var(--text); }
+  .ai-body .highlight { color: var(--accent); }
+  .ai-body .warn { color: var(--warn); }
+  .ai-body .info { color: var(--accent2); }
+
+  .placeholder {
+    color: var(--muted);
+    font-style: italic;
+    text-align: center;
+    padding: 20px;
+    font-size: 0.75rem;
+  }
+
+  /* Loading */
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid rgba(0,229,160,0.2);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    vertical-align: middle;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Chart */
+  .chart-container {
+    position: relative;
+    height: 120px;
+    padding: 16px;
+  }
+
+  .bar-chart {
+    display: flex;
+    align-items: flex-end;
+    gap: 4px;
+    height: 100%;
+  }
+
+  .bar-group {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    height: 100%;
+    justify-content: flex-end;
+  }
+
+  .bar {
+    width: 100%;
+    min-height: 2px;
+    transition: height 0.5s ease;
+    position: relative;
+  }
+
+  .bar-amort { background: var(--accent2); opacity: 0.7; }
+  .bar-interest { background: var(--accent); opacity: 0.7; }
+
+  .bar-label {
+    font-family: var(--mono);
+    font-size: 0.45rem;
+    color: var(--muted);
+    text-align: center;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    max-width: 100%;
+  }
+
+  /* Ticker search */
+  .ticker-row {
+    display: grid;
+    grid-template-columns: 1fr auto;
+    gap: 8px;
+  }
+
+  .section-divider {
+    margin: 16px 0 12px;
+    border: none;
+    border-top: 1px solid var(--border);
+    position: relative;
+  }
+
+  .section-divider::after {
+    content: attr(data-label);
+    position: absolute;
+    top: -8px;
+    left: 0;
+    background: var(--surface);
+    padding-right: 8px;
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    letter-spacing: 2px;
+    color: var(--muted);
+    text-transform: uppercase;
+  }
+
+  .info-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 4px 0;
+    border-bottom: 1px solid rgba(30,37,48,0.5);
+  }
+
+  .info-key {
+    font-family: var(--mono);
+    font-size: 0.6rem;
+    color: var(--muted);
+  }
+
+  .info-val {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text);
+  }
+
+  .scroll-body {
+    max-height: 220px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--border) transparent;
+  }
+
+  @media (max-width: 1100px) {
+    main { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: repeat(2, 1fr); }
+  }
+
+  @media (max-width: 600px) {
+    main { padding: 16px; }
+    header { padding: 14px 16px; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+  }
+
+  .fade-in { animation: fadeIn 0.4s ease; }
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; } }
+
+  /* ── Result Toast ───────────────────────────── */
+  #resultToast {
+    position: fixed;
+    bottom: 32px;
+    right: 32px;
+    z-index: 9999;
+    width: 340px;
+    background: var(--surface);
+    border: 1px solid var(--accent);
+    box-shadow: 0 0 0 1px rgba(0,229,160,0.15), 0 20px 60px rgba(0,0,0,0.6), 0 0 40px rgba(0,229,160,0.08);
+    transform: translateX(120%);
+    opacity: 0;
+    transition: transform 0.45s cubic-bezier(0.22,1,0.36,1), opacity 0.35s ease;
+    pointer-events: none;
+  }
+  #resultToast.show {
+    transform: translateX(0);
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  .toast-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-bottom: 1px solid var(--border);
+    background: linear-gradient(90deg, rgba(0,229,160,0.08), transparent);
+  }
+
+  .toast-check {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    border: 2px solid var(--accent);
+    display: flex; align-items: center; justify-content: center;
+    flex-shrink: 0;
+    position: relative;
+    overflow: hidden;
+  }
+  .toast-check svg {
+    opacity: 0;
+    transform: scale(0.4);
+    transition: all 0.3s ease 0.2s;
+  }
+  #resultToast.show .toast-check svg {
+    opacity: 1;
+    transform: scale(1);
+  }
+  .toast-check::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: rgba(0,229,160,0.15);
+    transform: scale(0);
+    transition: transform 0.4s ease 0.1s;
+  }
+  #resultToast.show .toast-check::after { transform: scale(1); }
+
+  .toast-title {
+    font-family: var(--display);
+    font-size: 1rem;
+    letter-spacing: 2px;
+    color: var(--accent);
+  }
+  .toast-close {
+    margin-left: auto;
+    background: none;
+    border: none;
+    color: var(--muted);
+    font-size: 1rem;
+    cursor: pointer;
+    line-height: 1;
+    padding: 2px 4px;
+    transition: color 0.2s;
+  }
+  .toast-close:hover { color: var(--text); }
+
+  .toast-body {
+    padding: 14px 16px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+
+  .toast-metric {
+    background: var(--bg);
+    border: 1px solid var(--border);
+    padding: 10px 12px;
+    position: relative;
+    overflow: hidden;
+  }
+  .toast-metric::before {
+    content: '';
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    width: 2px;
+    background: var(--accent);
+  }
+  .toast-metric.blue::before { background: var(--accent2); }
+  .toast-metric.warn::before { background: var(--warn); }
+
+  .toast-metric-label {
+    font-family: var(--mono);
+    font-size: 0.52rem;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 5px;
+  }
+  .toast-metric-val {
+    font-family: var(--display);
+    font-size: 1.25rem;
+    line-height: 1;
+    color: var(--text);
+  }
+  .toast-metric-val.green { color: var(--accent); }
+  .toast-metric-val.blue  { color: var(--accent2); }
+  .toast-metric-val.warn  { color: var(--warn); }
+
+  .toast-footer {
+    padding: 8px 16px 12px;
+    font-family: var(--mono);
+    font-size: 0.58rem;
+    color: var(--muted);
+    letter-spacing: 1px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .toast-bar {
+    flex: 1;
+    height: 2px;
+    background: var(--border);
+    position: relative;
+    overflow: hidden;
+  }
+  .toast-bar-fill {
+    position: absolute;
+    left: 0; top: 0; bottom: 0;
+    background: var(--accent);
+    width: 100%;
+    transform: translateX(-100%);
+    transition: none;
+  }
+  #resultToast.show .toast-bar-fill {
+    transform: translateX(0);
+    transition: transform 3.5s linear 0.3s;
+  }
+
+  @keyframes scanline {
+    from { transform: translateY(-100%); }
+    to   { transform: translateY(100%); }
+  }
+  .toast-scan {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to bottom, transparent 40%, rgba(0,229,160,0.04) 50%, transparent 60%);
+    animation: scanline 2s linear infinite;
+    pointer-events: none;
+  }
+
+  .tag-row { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+  .chip {
+    padding: 3px 8px;
+    font-family: var(--mono);
+    font-size: 0.55rem;
+    letter-spacing: 1px;
+    border: 1px solid var(--border);
+    color: var(--muted);
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+  .chip:hover, .chip.active { border-color: var(--accent); color: var(--accent); }
+
+  .error-msg {
+    background: rgba(255,77,109,0.1);
+    border: 1px solid rgba(255,77,109,0.3);
+    color: var(--danger);
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    padding: 8px 12px;
+    margin-top: 8px;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ON<span>calc</span></div>
+  <div class="subtitle">Calculadora de Obligaciones Negociables · ARG</div>
+  <div class="badge">⚡ IA Powered</div>
+  <div style="margin-left:auto; display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
+    <label style="font-family:var(--mono); font-size:0.55rem; letter-spacing:2px; color:var(--muted); white-space:nowrap; margin:0;">ANTHROPIC API KEY</label>
+    <div style="position:relative;">
+      <input type="password" id="apiKeyInput" placeholder="sk-ant-api03-..."
+        oninput="actualizarEstadoKey()"
+        style="width:230px; background:var(--bg); border:1px solid var(--border); color:var(--text);
+               font-family:var(--mono); font-size:0.7rem; padding:7px 32px 7px 10px; outline:none; transition:border-color 0.2s;">
+      <button onclick="toggleApiVis()" title="Mostrar/ocultar"
+        style="position:absolute; right:7px; top:50%; transform:translateY(-50%);
+               background:none; border:none; color:var(--muted); cursor:pointer; font-size:0.8rem; padding:0; line-height:1;">&#128065;</button>
+    </div>
+    <span id="apiKeyStatus" style="font-family:var(--mono); font-size:0.6rem; color:var(--muted);">&#9888; sin clave &#8212; IA deshabilitada</span>
+  </div>
+</header>
+
+<main>
+  <!-- LEFT PANEL -->
+  <div style="display: flex; flex-direction: column; gap: 16px;">
+
+    <!-- Buscar por ticker -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="dot blue"></div>
+        <div class="panel-title">Buscar ON por ticker</div>
+      </div>
+      <div class="panel-body">
+        <div class="field">
+          <label>Ticker / Código de especie</label>
+          <div class="ticker-row">
+            <input type="text" id="tickerInput" placeholder="ej: YPF3O, PAMPA5, TECPC" style="text-transform:uppercase;">
+            <button class="btn btn-ai" style="margin:0; width:auto; padding:10px 14px;" onclick="buscarPorTicker()">🔍</button>
+          </div>
+        </div>
+        <div class="tag-row">
+          <span class="chip" onclick="cargarEjemplo('YPF3O')">YPF3O</span>
+          <span class="chip" onclick="cargarEjemplo('TECPC')">TECPC</span>
+          <span class="chip" onclick="cargarEjemplo('MRCAO')">MRCAO</span>
+          <span class="chip" onclick="cargarEjemplo('GNCXO')">GNCXO</span>
+          <span class="chip" onclick="cargarEjemplo('PAMP5D')">PAMP5D</span>
+        </div>
+        <button class="btn btn-ai" onclick="buscarConIA()" style="margin-top:10px;">
+          ✦ Obtener flujos con IA
+        </button>
+        <div id="fetchError" class="error-msg" style="display:none;"></div>
+      </div>
+    </div>
+
+    <!-- Parámetros manuales -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="dot"></div>
+        <div class="panel-title">Parámetros del instrumento</div>
+      </div>
+      <div class="panel-body">
+
+        <hr class="section-divider" data-label="Emisión">
+
+        <div class="field">
+          <label>Moneda</label>
+          <select id="moneda" onchange="actualizarPlaceholders()">
+            <option value="USD">USD — Dólar (hard dollar)</option>
+            <option value="ARS">ARS — Pesos argentinos</option>
+            <option value="USDL">USD-L — Dollar linked</option>
+          </select>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Valor nominal (VN)</label>
+            <input type="number" id="valorNominal" value="1000" step="100">
+          </div>
+          <div class="field">
+            <label>Precio de compra (%VN)</label>
+            <input type="number" id="precio" value="98.5" step="0.01">
+          </div>
+        </div>
+
+        <div class="row2">
+          <div class="field">
+            <label>Tasa cupón anual (%)</label>
+            <input type="number" id="tasaCupon" value="9" step="0.01">
+          </div>
+          <div class="field">
+            <label>Frecuencia cupón</label>
+            <select id="frecuencia">
+              <option value="2">Semestral</option>
+              <option value="4">Trimestral</option>
+              <option value="1">Anual</option>
+              <option value="12">Mensual</option>
+            </select>
+          </div>
+        </div>
+
+        <hr class="section-divider" data-label="Fechas">
+
+        <div class="row2">
+          <div class="field">
+            <label>Fecha de compra</label>
+            <input type="date" id="fechaCompra">
+          </div>
+          <div class="field">
+            <label>Fecha de vencimiento</label>
+            <input type="date" id="fechaVenc">
+          </div>
+        </div>
+
+        <hr class="section-divider" data-label="Amortización">
+
+        <div class="field">
+          <label>Tipo de amortización</label>
+          <select id="tipoAmort" onchange="toggleAmortPersonalizada()">
+            <option value="bullet">Bullet (al vencimiento)</option>
+            <option value="lineal">Lineal (cuotas iguales)</option>
+            <option value="custom">Personalizada</option>
+          </select>
+        </div>
+
+        <div id="amortCustomPanel" style="display:none;">
+          <div class="field">
+            <label>Amortizaciones (JSON: [{fecha, pct}])</label>
+            <input type="text" id="amortCustom" placeholder='[{"fecha":"2025-06-01","pct":25},...]'>
+          </div>
+        </div>
+
+        <hr class="section-divider" data-label="Gastos">
+
+        <div class="row2">
+          <div class="field">
+            <label>Comisión broker (%)</label>
+            <input type="number" id="comision" value="0.6" step="0.01">
+          </div>
+          <div class="field">
+            <label>Impuesto bienes pers. (%)</label>
+            <input type="number" id="impuesto" value="0" step="0.01">
+          </div>
+        </div>
+
+        <button class="btn btn-primary" onclick="calcular()" id="btnCalc">
+          CALCULAR
+        </button>
+        <button class="btn btn-secondary" onclick="analizarConIA()">
+          ✦ Análisis IA del instrumento
+        </button>
+      </div>
+    </div>
+
+    <!-- Info ON -->
+    <div class="panel" id="infoPanel" style="display:none;">
+      <div class="panel-header">
+        <div class="dot warn"></div>
+        <div class="panel-title" id="infoPanelTitle">Datos del emisor</div>
+      </div>
+      <div class="panel-body" id="infoPanelBody" style="font-size:0.75rem; font-family: var(--mono);">
+      </div>
+    </div>
+
+  </div>
+
+  <!-- RIGHT COL -->
+  <div class="right-col">
+
+    <!-- Metrics -->
+    <div class="metrics">
+      <div class="metric active" id="m-tir">
+        <div class="metric-label">TIR / Yield to Maturity</div>
+        <div class="metric-value green" id="v-tir">—</div>
+        <div class="metric-sub">Rendimiento efectivo anual</div>
+      </div>
+      <div class="metric blue" id="m-precio">
+        <div class="metric-label">Precio limpio (%VN)</div>
+        <div class="metric-value blue" id="v-precio">—</div>
+        <div class="metric-sub" id="v-precioSucio">Precio sucio: —</div>
+      </div>
+      <div class="metric warn" id="m-dur">
+        <div class="metric-label">Duration Modificada</div>
+        <div class="metric-value warn" id="v-dur">—</div>
+        <div class="metric-sub" id="v-durMac">Macaulay: —</div>
+      </div>
+      <div class="metric" id="m-spread">
+        <div class="metric-label">Spread sobre UST</div>
+        <div class="metric-value" id="v-spread">—</div>
+        <div class="metric-sub" id="v-convex">Convexidad: —</div>
+      </div>
+    </div>
+
+    <!-- Flujos -->
+    <div class="panel">
+      <div class="panel-header">
+        <div class="dot"></div>
+        <div class="panel-title">Flujos de fondos proyectados</div>
+        <div style="margin-left:auto; display:flex; gap:8px; align-items:center;">
+          <span style="font-family:var(--mono); font-size:0.55rem; color:var(--muted);">
+            <span style="color:var(--accent2)">■</span> Amort
+            <span style="color:var(--accent); margin-left:6px">■</span> Interés
+          </span>
+        </div>
+      </div>
+      <div class="chart-container" id="chartContainer">
+        <div class="placeholder">Los flujos aparecerán aquí tras calcular</div>
+      </div>
+      <div class="panel-body" style="padding-top:0;">
+        <div class="scroll-body">
+          <table class="flows-table" id="flowsTable">
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Fecha</th>
+                <th>Días</th>
+                <th>Amortización</th>
+                <th>Interés</th>
+                <th>Flujo total</th>
+                <th>Saldo VN</th>
+                <th>VP Flujo</th>
+              </tr>
+            </thead>
+            <tbody id="flowsBody">
+              <tr><td colspan="8" class="placeholder">—</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- AI Analysis -->
+    <div class="ai-box">
+      <div class="ai-header">
+        <div class="ai-dot"></div>
+        <div class="ai-title">Análisis IA — Claude</div>
+        <div style="margin-left:auto; font-family:var(--mono); font-size:0.55rem; color:var(--muted)" id="aiStatus">Listo</div>
+      </div>
+      <div class="ai-body" id="aiAnalysis">
+        <div class="placeholder">Cargá los parámetros y presioná "Análisis IA" para obtener un análisis detallado del instrumento, comparación con alternativas y evaluación de riesgo.</div>
+      </div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Result Toast -->
+<div id="resultToast">
+  <div class="toast-scan"></div>
+  <div class="toast-header">
+    <div class="toast-check">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+        <polyline points="2,7 6,11 12,3" stroke="#00e5a0" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </div>
+    <div class="toast-title">CÁLCULO COMPLETADO</div>
+    <button class="toast-close" onclick="cerrarToast()">✕</button>
+  </div>
+  <div class="toast-body">
+    <div class="toast-metric">
+      <div class="toast-metric-label">TIR anual</div>
+      <div class="toast-metric-val green" id="t-tir">—</div>
+    </div>
+    <div class="toast-metric blue">
+      <div class="toast-metric-label">Precio limpio</div>
+      <div class="toast-metric-val blue" id="t-precio">—</div>
+    </div>
+    <div class="toast-metric warn">
+      <div class="toast-metric-label">Duration mod.</div>
+      <div class="toast-metric-val warn" id="t-dur">—</div>
+    </div>
+    <div class="toast-metric">
+      <div class="toast-metric-label">Flujos generados</div>
+      <div class="toast-metric-val" id="t-flujos">—</div>
+    </div>
+  </div>
+  <div class="toast-footer">
+    <span id="t-ticker">ON</span>&nbsp;·&nbsp;<span id="t-time">—</span>
+    <div class="toast-bar"><div class="toast-bar-fill" id="toastBarFill"></div></div>
+  </div>
+</div>
+
+<script>
+// ─── API Key helpers ─────────────────────────────────────────────────────────
+function getApiKey() {
+  return (document.getElementById('apiKeyInput').value || '').trim();
+}
+
+function actualizarEstadoKey() {
+  const key = getApiKey();
+  const el = document.getElementById('apiKeyStatus');
+  const inp = document.getElementById('apiKeyInput');
+  if (key.startsWith('sk-ant-') && key.length > 20) {
+    el.textContent = '✓ clave válida';
+    el.style.color = 'var(--accent)';
+    inp.style.borderColor = 'var(--accent)';
+  } else if (key.length > 0) {
+    el.textContent = '⚠ formato incorrecto';
+    el.style.color = 'var(--warn)';
+    inp.style.borderColor = 'var(--warn)';
+  } else {
+    el.textContent = '⚠ sin clave — IA deshabilitada';
+    el.style.color = 'var(--muted)';
+    inp.style.borderColor = 'var(--border)';
+  }
+}
+
+function toggleApiVis() {
+  const inp = document.getElementById('apiKeyInput');
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+}
+
+// ─── Estado global ────────────────────────────────────────────────────────────
+let flujos = [];
+let resultados = {};
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  const hoy = new Date();
+  const venc = new Date(hoy);
+  venc.setFullYear(venc.getFullYear() + 3);
+
+  document.getElementById('fechaCompra').value = hoy.toISOString().split('T')[0];
+  document.getElementById('fechaVenc').value = venc.toISOString().split('T')[0];
+};
+
+function toggleAmortPersonalizada() {
+  const v = document.getElementById('tipoAmort').value;
+  document.getElementById('amortCustomPanel').style.display = v === 'custom' ? 'block' : 'none';
+}
+
+function actualizarPlaceholders() {}
+
+// ─── Cargar ejemplo predefinido ───────────────────────────────────────────────
+function cargarEjemplo(ticker) {
+  document.getElementById('tickerInput').value = ticker;
+  buscarConIA();
+}
+
+// ─── Buscar con IA ────────────────────────────────────────────────────────────
+async function buscarConIA() {
+  const ticker = document.getElementById('tickerInput').value.trim().toUpperCase();
+  if (!ticker) { alert('Ingresá un ticker'); return; }
+
+  const err = document.getElementById('fetchError');
+  err.style.display = 'none';
+
+  document.getElementById('aiStatus').textContent = '⏳ Buscando...';
+  document.getElementById('aiAnalysis').innerHTML = '<div class="placeholder"><span class="spinner"></span> Buscando datos de mercado para ' + ticker + '...</div>';
+
+  const prompt = `Eres un experto en mercado de capitales argentino. Para la Obligación Negociable con ticker "${ticker}" del mercado argentino (BYMA/MAE), proporciona los datos actuales y características del instrumento.
+
+Responde ÚNICAMENTE en JSON válido, sin texto adicional, con esta estructura exacta:
+{
+  "ticker": "${ticker}",
+  "emisor": "nombre del emisor",
+  "descripcion": "descripción breve del instrumento",
+  "moneda": "USD" o "ARS" o "USDL",
+  "tasaCupon": número (tasa anual en porcentaje, ej: 9.5),
+  "frecuencia": número (1=anual, 2=semestral, 4=trimestral, 12=mensual),
+  "tipoAmort": "bullet" o "lineal",
+  "fechaVencimiento": "YYYY-MM-DD",
+  "precioMercado": número (precio como porcentaje del VN, ej: 97.5),
+  "valorNominal": 1000,
+  "calificacion": "calificación crediticia si la tiene",
+  "ley": "Argentina" o "Nueva York",
+  "sector": "sector del emisor",
+  "observaciones": "notas relevantes sobre el instrumento, riesgos, liquidez, etc."
+}
+
+Si no conocés el ticker exacto, usa tus mejores estimaciones basadas en ONs similares del mercado argentino. Siempre devuelve JSON válido.`;
+
+  try {
+    const apiKey = getApiKey();
+    if (!apiKey) {
+      document.getElementById('fetchError').textContent = 'Ingresá tu API Key de Anthropic en la barra superior.';
+      document.getElementById('fetchError').style.display = 'block';
+      document.getElementById('aiStatus').textContent = 'Sin clave';
+      document.getElementById('aiAnalysis').innerHTML = '<div class="placeholder">Necesitás una API Key de Anthropic para usar la IA. Ingresala en la barra superior.</div>';
+      return;
+    }
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error?.message || 'HTTP ' + resp.status);
+    }
+
+    const data = await resp.json();
+    const text = data.content.find(b => b.type === 'text')?.text || '';
+
+    // Limpiar posibles backticks
+    const clean = text.replace(/```json|```/g, '').trim();
+    const parsed = JSON.parse(clean);
+
+    // Poblar formulario
+    document.getElementById('moneda').value = parsed.moneda || 'USD';
+    document.getElementById('tasaCupon').value = parsed.tasaCupon || 9;
+    document.getElementById('frecuencia').value = parsed.frecuencia || 2;
+    document.getElementById('tipoAmort').value = parsed.tipoAmort || 'bullet';
+    document.getElementById('valorNominal').value = parsed.valorNominal || 1000;
+    document.getElementById('precio').value = parsed.precioMercado || 100;
+
+    if (parsed.fechaVencimiento) {
+      document.getElementById('fechaVenc').value = parsed.fechaVencimiento;
+    }
+
+    // Mostrar info panel
+    const infoPanel = document.getElementById('infoPanel');
+    document.getElementById('infoPanelTitle').textContent = `${parsed.ticker} — ${parsed.emisor}`;
+    document.getElementById('infoPanelBody').innerHTML = `
+      <div class="info-row"><span class="info-key">Emisor</span><span class="info-val">${parsed.emisor}</span></div>
+      <div class="info-row"><span class="info-key">Descripción</span><span class="info-val">${parsed.descripcion}</span></div>
+      <div class="info-row"><span class="info-key">Moneda</span><span class="info-val">${parsed.moneda}</span></div>
+      <div class="info-row"><span class="info-key">Tasa cupón</span><span class="info-val">${parsed.tasaCupon}% anual</span></div>
+      <div class="info-row"><span class="info-key">Vencimiento</span><span class="info-val">${parsed.fechaVencimiento}</span></div>
+      <div class="info-row"><span class="info-key">Precio mercado</span><span class="info-val">${parsed.precioMercado}% VN</span></div>
+      ${parsed.calificacion ? `<div class="info-row"><span class="info-key">Calificación</span><span class="info-val">${parsed.calificacion}</span></div>` : ''}
+      <div class="info-row"><span class="info-key">Ley aplicable</span><span class="info-val">${parsed.ley}</span></div>
+      <div class="info-row"><span class="info-key">Sector</span><span class="info-val">${parsed.sector}</span></div>
+      <div style="margin-top:8px; padding:8px; background:rgba(255,183,0,0.05); border:1px solid rgba(255,183,0,0.2); color:#8da0b8; font-size:0.65rem; line-height:1.5;">${parsed.observaciones}</div>
+    `;
+    infoPanel.style.display = 'block';
+
+    document.getElementById('aiStatus').textContent = 'Datos cargados';
+    document.getElementById('aiAnalysis').innerHTML = `<p>Datos de <strong>${parsed.ticker}</strong> cargados correctamente. Presioná <span class="highlight">CALCULAR</span> para ver los flujos y métricas, o <span class="info">Análisis IA</span> para un análisis completo.</p>`;
+
+    calcular();
+
+  } catch (e) {
+    err.textContent = 'Error al obtener datos: ' + e.message;
+    err.style.display = 'block';
+    document.getElementById('aiStatus').textContent = 'Error';
+    document.getElementById('aiAnalysis').innerHTML = `<div class="placeholder">Error al obtener datos del ticker. Podés ingresar los parámetros manualmente.</div>`;
+  }
+}
+
+function buscarPorTicker() {
+  buscarConIA();
+}
+
+// ─── Calcular flujos ──────────────────────────────────────────────────────────
+function calcular() {
+  const fechaCompra = new Date(document.getElementById('fechaCompra').value);
+  const fechaVenc = new Date(document.getElementById('fechaVenc').value);
+  const VN = parseFloat(document.getElementById('valorNominal').value);
+  const precio = parseFloat(document.getElementById('precio').value) / 100;
+  const tasaCupon = parseFloat(document.getElementById('tasaCupon').value) / 100;
+  const frecuencia = parseInt(document.getElementById('frecuencia').value);
+  const tipoAmort = document.getElementById('tipoAmort').value;
+  const comision = parseFloat(document.getElementById('comision').value) / 100;
+
+  if (!fechaCompra || !fechaVenc || fechaVenc <= fechaCompra) {
+    alert('Verificá las fechas');
+    return;
+  }
+
+  const mesesEntreCupones = 12 / frecuencia;
+  const tasaPeriodica = tasaCupon / frecuencia;
+
+  // Generar fechas de cupón
+  flujos = [];
+  let fechaCupon = new Date(fechaVenc);
+  const cupones = [];
+
+  // Retroceder desde vencimiento
+  while (fechaCupon > fechaCompra) {
+    cupones.unshift(new Date(fechaCupon));
+    fechaCupon = new Date(fechaCupon);
+    fechaCupon.setMonth(fechaCupon.getMonth() - mesesEntreCupones);
+  }
+
+  const numCupones = cupones.length;
+  if (numCupones === 0) { alert('No hay cupones futuros'); return; }
+
+  // Amortización por cupón
+  let saldoVN = VN;
+  let amortPorCupon = 0;
+  if (tipoAmort === 'lineal') amortPorCupon = VN / numCupones;
+
+  for (let i = 0; i < cupones.length; i++) {
+    const fecha = cupones[i];
+    const diasDesdeCompra = Math.round((fecha - fechaCompra) / 86400000);
+
+    let amort = 0;
+    if (tipoAmort === 'bullet' && i === cupones.length - 1) amort = saldoVN;
+    else if (tipoAmort === 'lineal') amort = amortPorCupon;
+
+    const interes = saldoVN * tasaPeriodica;
+    saldoVN -= amort;
+
+    flujos.push({
+      num: i + 1,
+      fecha: fecha.toISOString().split('T')[0],
+      dias: diasDesdeCompra,
+      amort,
+      interes,
+      total: amort + interes,
+      saldo: saldoVN,
+      vp: 0
+    });
+  }
+
+  // Calcular TIR (Newton-Raphson)
+  const inversionInicial = -(VN * precio * (1 + comision));
+  const cashflows = [inversionInicial, ...flujos.map(f => f.total)];
+  const tiempos = [0, ...flujos.map(f => f.dias / 365)];
+
+  let tir = 0.1;
+  for (let iter = 0; iter < 200; iter++) {
+    let f = 0, df = 0;
+    for (let j = 0; j < cashflows.length; j++) {
+      const t = tiempos[j];
+      const disc = Math.pow(1 + tir, t);
+      f += cashflows[j] / disc;
+      df -= t * cashflows[j] / (disc * (1 + tir));
+    }
+    const delta = f / df;
+    tir -= delta;
+    if (Math.abs(delta) < 1e-8) break;
+  }
+
+  // VP de flujos y duration
+  let sumVP = 0, sumDuracion = 0;
+  flujos.forEach((fl, i) => {
+    const t = fl.dias / 365;
+    fl.vp = fl.total / Math.pow(1 + tir, t);
+    sumVP += fl.vp;
+    sumDuracion += t * fl.vp;
+  });
+
+  const duracionMacaulay = sumDuracion / sumVP;
+  const duracionModificada = duracionMacaulay / (1 + tir / frecuencia);
+
+  // Convexidad
+  let convexidad = 0;
+  flujos.forEach(fl => {
+    const t = fl.dias / 365;
+    convexidad += fl.vp * t * (t + 1 / frecuencia);
+  });
+  convexidad = convexidad / (sumVP * Math.pow(1 + tir / frecuencia, 2));
+
+  // Precio sucio (accrued interest)
+  const ultimoCupon = new Date(fechaCompra);
+  ultimoCupon.setMonth(ultimoCupon.getMonth() - mesesEntreCupones);
+  const diasTranscurridos = Math.round((fechaCompra - ultimoCupon) / 86400000);
+  const interesDevengado = (tasaCupon / frecuencia) * (diasTranscurridos / (365 / frecuencia));
+  const precioSucio = precio + interesDevengado;
+
+  resultados = { tir, duracionMacaulay, duracionModificada, convexidad, precio, precioSucio, interesDevengado };
+
+  // Actualizar métricas
+  document.getElementById('v-tir').textContent = (tir * 100).toFixed(2) + '%';
+  document.getElementById('v-precio').textContent = (precio * 100).toFixed(2) + '%';
+  document.getElementById('v-precioSucio').textContent = 'Precio sucio: ' + (precioSucio * 100).toFixed(2) + '%';
+  document.getElementById('v-dur').textContent = duracionModificada.toFixed(2) + ' años';
+  document.getElementById('v-durMac').textContent = 'Macaulay: ' + duracionMacaulay.toFixed(2) + ' años';
+  document.getElementById('v-convex').textContent = 'Convexidad: ' + convexidad.toFixed(2);
+
+  // Spread estimado (UST ~5.3%)
+  const ust10y = 4.8;
+  const spread = (tir * 100 - ust10y).toFixed(0);
+  document.getElementById('v-spread').textContent = spread + ' bps';
+
+  // Tabla flujos
+  renderizarTabla();
+  renderizarGrafico();
+
+  // 🎉 Toast de resultado
+  mostrarToast({ tir, duracionModificada, precio, numFlujos: flujos.length });
+}
+
+// ─── Toast de resultado ───────────────────────────────────────────────────────
+let toastTimer = null;
+
+function mostrarToast({ tir, duracionModificada, precio, numFlujos }) {
+  const toast = document.getElementById('resultToast');
+  const ticker = document.getElementById('tickerInput').value.trim() || 'ON';
+  const ahora  = new Date().toLocaleTimeString('es-AR', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+
+  document.getElementById('t-tir').textContent    = (tir * 100).toFixed(2) + '%';
+  document.getElementById('t-precio').textContent = (precio * 100).toFixed(2) + '% VN';
+  document.getElementById('t-dur').textContent    = duracionModificada.toFixed(2) + ' años';
+  document.getElementById('t-flujos').textContent = numFlujos + ' cupones';
+  document.getElementById('t-ticker').textContent = ticker.toUpperCase();
+  document.getElementById('t-time').textContent   = ahora;
+
+  // Reset barra para reanimar
+  const fill = document.getElementById('toastBarFill');
+  fill.style.transition = 'none';
+  fill.style.transform  = 'translateX(-100%)';
+  void fill.offsetWidth; // reflow
+
+  toast.classList.add('show');
+
+  if (toastTimer) clearTimeout(toastTimer);
+  toastTimer = setTimeout(cerrarToast, 4200);
+}
+
+function cerrarToast() {
+  document.getElementById('resultToast').classList.remove('show');
+  if (toastTimer) { clearTimeout(toastTimer); toastTimer = null; }
+}
+
+function renderizarTabla() {
+  const body = document.getElementById('flowsBody');
+  body.innerHTML = '';
+
+  const moneda = document.getElementById('moneda').value;
+  const sym = moneda === 'ARS' ? '$' : 'U$S';
+
+  flujos.forEach(fl => {
+    const tr = document.createElement('tr');
+    tr.className = 'fade-in';
+    tr.innerHTML = `
+      <td>${fl.num}</td>
+      <td>${fl.fecha}</td>
+      <td>${fl.dias}</td>
+      <td style="color:var(--accent2)">${fl.amort > 0 ? sym + ' ' + fl.amort.toFixed(2) : '—'}</td>
+      <td style="color:var(--accent)">${sym} ${fl.interes.toFixed(2)}</td>
+      <td style="color:var(--warn); font-weight:500">${sym} ${fl.total.toFixed(2)}</td>
+      <td style="color:var(--muted)">${sym} ${fl.saldo.toFixed(2)}</td>
+      <td style="color:var(--text)">${sym} ${fl.vp.toFixed(2)}</td>
+    `;
+    body.appendChild(tr);
+  });
+}
+
+function renderizarGrafico() {
+  const container = document.getElementById('chartContainer');
+  if (flujos.length === 0) return;
+
+  const maxTotal = Math.max(...flujos.map(f => f.total));
+
+  let html = '<div class="bar-chart">';
+  flujos.forEach(fl => {
+    const pctAmort = (fl.amort / maxTotal) * 100;
+    const pctInterest = (fl.interes / maxTotal) * 100;
+    const label = fl.fecha.slice(2, 7);
+    html += `
+      <div class="bar-group">
+        <div class="bar bar-interest" style="height:${pctInterest}%"></div>
+        <div class="bar bar-amort" style="height:${pctAmort}%"></div>
+        <div class="bar-label">${label}</div>
+      </div>
+    `;
+  });
+  html += '</div>';
+  container.innerHTML = html;
+}
+
+// ─── Análisis IA ──────────────────────────────────────────────────────────────
+async function analizarConIA() {
+  if (flujos.length === 0) { calcular(); }
+
+  const ticker = document.getElementById('tickerInput').value || 'ON';
+  const moneda = document.getElementById('moneda').value;
+  const tasaCupon = document.getElementById('tasaCupon').value;
+  const precio = document.getElementById('precio').value;
+  const fechaVenc = document.getElementById('fechaVenc').value;
+  const { tir, duracionModificada, convexidad } = resultados;
+
+  const aiBox = document.getElementById('aiAnalysis');
+  const aiStatus = document.getElementById('aiStatus');
+
+  aiBox.innerHTML = '<div class="placeholder"><span class="spinner"></span> Analizando instrumento con IA...</div>';
+  aiStatus.textContent = '⏳ Procesando';
+
+  const flujosSummary = flujos.slice(0, 8).map(f => `Fecha ${f.fecha}: total ${f.total.toFixed(2)}, VP ${f.vp.toFixed(2)}`).join('; ');
+
+  const prompt = `Eres un analista experto en renta fija del mercado argentino. Analiza esta Obligación Negociable:
+
+Ticker: ${ticker}
+Moneda: ${moneda}
+Tasa cupón: ${tasaCupon}% anual
+Precio de compra: ${precio}% VN
+Vencimiento: ${fechaVenc}
+TIR calculada: ${tir ? (tir * 100).toFixed(2) + '%' : 'N/D'}
+Duration modificada: ${duracionModificada ? duracionModificada.toFixed(2) + ' años' : 'N/D'}
+Convexidad: ${convexidad ? convexidad.toFixed(2) : 'N/D'}
+Primeros flujos: ${flujosSummary}
+
+Proporciona un análisis conciso pero completo en HTML con estas secciones:
+1. Evaluación del rendimiento (¿es atractivo el ${tir ? (tir*100).toFixed(2) : tasaCupon}% en el contexto actual?)
+2. Riesgos principales (crédito, liquidez, tipo de cambio si aplica)
+3. Sensibilidad: impacto de un cambio de 100bps en la TIR sobre el precio
+4. Comparación con alternativas (otros ONs similares, Lecaps, bonos soberanos)
+5. Recomendación
+
+Usa <strong> para destacar, <span class="highlight"> para cifras positivas, <span class="warn"> para alertas, <span class="info"> para datos neutros. Sé directo y conciso. Máximo 250 palabras.`;
+
+  try {
+    const apiKey2 = getApiKey();
+    if (!apiKey2) {
+      aiBox.innerHTML = '<div class="placeholder">Necesitás una API Key de Anthropic. Ingresala en la barra superior.</div>';
+      aiStatus.textContent = 'Sin clave';
+      return;
+    }
+
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'x-api-key': apiKey2,
+        'anthropic-version': '2023-06-01',
+        'anthropic-dangerous-direct-browser-access': 'true'
+      },
+      body: JSON.stringify({
+        model: 'claude-sonnet-4-20250514',
+        max_tokens: 1000,
+        messages: [{ role: 'user', content: prompt }]
+      })
+    });
+
+    if (!resp.ok) {
+      const errData = await resp.json().catch(() => ({}));
+      throw new Error(errData.error?.message || 'HTTP ' + resp.status);
+    }
+
+    const data = await resp.json();
+    const text = data.content.find(b => b.type === 'text')?.text || '';
+
+    aiBox.innerHTML = text;
+    aiStatus.textContent = '✓ Análisis completo';
+  } catch (e) {
+    aiBox.innerHTML = `<div class="placeholder" style="color:var(--danger)">Error al obtener análisis: ${e.message}</div>`;
+    aiStatus.textContent = 'Error';
+  }
+}
+</script>
+</body>
+</html>

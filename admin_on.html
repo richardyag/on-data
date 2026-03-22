@@ -1,0 +1,632 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ONcalc — Panel de Administración</title>
+<link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=DM+Mono:ital,wght@0,300;0,400;0,500;1,300&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0a0c0f;
+    --surface: #111418;
+    --border: #1e2530;
+    --accent: #00e5a0;
+    --accent2: #0095ff;
+    --warn: #ffb700;
+    --danger: #ff4d6d;
+    --text: #e8edf5;
+    --muted: #5a6478;
+    --mono: 'DM Mono', monospace;
+    --sans: 'DM Sans', sans-serif;
+    --display: 'Bebas Neue', cursive;
+  }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    background: var(--bg); color: var(--text);
+    font-family: var(--sans); min-height: 100vh;
+    background-image: radial-gradient(ellipse 80% 40% at 50% -10%, rgba(0,149,255,0.07) 0%, transparent 60%);
+  }
+  header {
+    border-bottom: 1px solid var(--border);
+    padding: 18px 36px;
+    display: flex; align-items: center; gap: 16px;
+    background: rgba(10,12,15,0.95);
+    backdrop-filter: blur(10px);
+    position: sticky; top: 0; z-index: 100;
+  }
+  .logo { font-family: var(--display); font-size: 1.8rem; letter-spacing: 2px; color: var(--accent2); }
+  .logo span { color: var(--text); }
+  .subtitle { font-family: var(--mono); font-size: 0.6rem; color: var(--muted); letter-spacing: 3px; text-transform: uppercase; border-left: 1px solid var(--border); padding-left: 16px; }
+  .badge { background: rgba(0,149,255,0.1); border: 1px solid rgba(0,149,255,0.3); color: var(--accent2); font-family: var(--mono); font-size: 0.58rem; padding: 4px 10px; letter-spacing: 2px; }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 32px 36px; display: flex; flex-direction: column; gap: 20px; }
+
+  .panel { background: var(--surface); border: 1px solid var(--border); }
+  .panel-header { padding: 14px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; gap: 10px; }
+  .panel-title { font-family: var(--mono); font-size: 0.62rem; letter-spacing: 3px; text-transform: uppercase; color: var(--muted); }
+  .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .dot.blue { background: var(--accent2); }
+  .dot.warn { background: var(--warn); }
+  .panel-body { padding: 20px; }
+
+  .creds-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .field { margin-bottom: 0; }
+  label { display: block; font-family: var(--mono); font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  input, select {
+    width: 100%; background: var(--bg); border: 1px solid var(--border);
+    color: var(--text); font-family: var(--mono); font-size: 0.82rem;
+    padding: 10px 12px; outline: none; transition: border-color 0.2s;
+  }
+  input:focus, select:focus { border-color: var(--accent2); }
+
+  .status-row { display: flex; align-items: center; gap: 10px; margin-top: 12px; font-family: var(--mono); font-size: 0.65rem; }
+  .status-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--muted); }
+  .status-dot.ok { background: var(--accent); }
+  .status-dot.warn { background: var(--warn); }
+  .status-dot.err { background: var(--danger); }
+
+  /* Tickers grid */
+  .tickers-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+    gap: 8px;
+  }
+  .ticker-card {
+    background: var(--bg); border: 1px solid var(--border);
+    padding: 10px 12px; cursor: pointer; transition: all 0.2s;
+    position: relative; user-select: none;
+  }
+  .ticker-card:hover { border-color: var(--accent2); }
+  .ticker-card.selected { border-color: var(--accent); background: rgba(0,229,160,0.05); }
+  .ticker-card.loaded { border-color: rgba(0,229,160,0.4); }
+  .ticker-card.loading { border-color: var(--warn); }
+  .ticker-card.error { border-color: var(--danger); }
+  .tc-ticker { font-family: var(--mono); font-size: 0.78rem; font-weight: 500; color: var(--text); }
+  .tc-emisor { font-family: var(--sans); font-size: 0.6rem; color: var(--muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .tc-sector { font-family: var(--mono); font-size: 0.5rem; color: var(--accent2); margin-top: 4px; letter-spacing: 1px; text-transform: uppercase; }
+  .tc-status { position: absolute; top: 6px; right: 8px; font-size: 0.65rem; }
+
+  .sector-header {
+    font-family: var(--mono); font-size: 0.58rem; letter-spacing: 2px; text-transform: uppercase;
+    color: var(--accent2); margin: 16px 0 8px; padding-bottom: 4px;
+    border-bottom: 1px solid var(--border);
+  }
+  .sector-header:first-child { margin-top: 0; }
+
+  /* Buttons */
+  .btn { padding: 12px 20px; border: none; cursor: pointer; font-family: var(--display); font-size: 1rem; letter-spacing: 2px; transition: all 0.2s; display: inline-flex; align-items: center; gap: 8px; }
+  .btn-primary { background: var(--accent); color: var(--bg); }
+  .btn-primary:hover:not(:disabled) { background: #00ffb3; }
+  .btn-primary:disabled { background: #1a2e25; color: var(--muted); cursor: not-allowed; }
+  .btn-blue { background: var(--accent2); color: var(--bg); }
+  .btn-blue:hover:not(:disabled) { background: #33aaff; }
+  .btn-blue:disabled { background: #0a1a2e; color: var(--muted); cursor: not-allowed; }
+  .btn-ghost { background: transparent; border: 1px solid var(--border); color: var(--muted); font-family: var(--mono); font-size: 0.65rem; letter-spacing: 2px; padding: 10px 16px; }
+  .btn-ghost:hover { border-color: var(--accent2); color: var(--accent2); }
+
+  .actions-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+
+  /* Log */
+  .log-box {
+    background: var(--bg); border: 1px solid var(--border);
+    font-family: var(--mono); font-size: 0.68rem; line-height: 1.8;
+    padding: 14px 16px; max-height: 260px; overflow-y: auto;
+    scrollbar-width: thin; scrollbar-color: var(--border) transparent;
+  }
+  .log-line { display: flex; gap: 10px; }
+  .log-time { color: var(--muted); flex-shrink: 0; }
+  .log-ok { color: var(--accent); }
+  .log-err { color: var(--danger); }
+  .log-info { color: var(--accent2); }
+  .log-warn { color: var(--warn); }
+
+  /* Progress */
+  .progress-bar { height: 3px; background: var(--border); margin-top: 12px; overflow: hidden; }
+  .progress-fill { height: 100%; background: var(--accent); width: 0%; transition: width 0.3s; }
+
+  /* Stats */
+  .stats-row { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1px; background: var(--border); }
+  .stat { background: var(--surface); padding: 16px; }
+  .stat-label { font-family: var(--mono); font-size: 0.52rem; letter-spacing: 2px; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .stat-val { font-family: var(--display); font-size: 1.6rem; color: var(--text); }
+  .stat-val.green { color: var(--accent); }
+  .stat-val.blue { color: var(--accent2); }
+  .stat-val.warn { color: var(--warn); }
+
+  .spinner { display: inline-block; width: 12px; height: 12px; border: 2px solid rgba(0,229,160,0.2); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .fade-in { animation: fadeIn 0.3s ease; }
+  @keyframes fadeIn { from { opacity:0; transform:translateY(3px); } to { opacity:1; } }
+
+  .info-box { background: rgba(0,149,255,0.05); border: 1px solid rgba(0,149,255,0.2); padding: 12px 16px; font-family: var(--mono); font-size: 0.65rem; color: #6a8faf; line-height: 1.7; }
+  .info-box a { color: var(--accent2); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">ON<span>admin</span></div>
+  <div class="subtitle">Panel de carga de datos · richardyag/on-data</div>
+  <div class="badge">ADMIN</div>
+</header>
+
+<main>
+
+  <!-- Credenciales -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="dot blue"></div>
+      <div class="panel-title">Credenciales</div>
+    </div>
+    <div class="panel-body">
+      <div class="info-box" style="margin-bottom:16px;">
+        Esta herramienta usa tu API Key de Anthropic para obtener datos de cada ON, y tu GitHub Token para guardarlos en <strong>richardyag/on-data</strong>. Las credenciales no se almacenan en ningún lado — solo viven en esta sesión del browser.
+      </div>
+      <div class="creds-grid">
+        <div class="field">
+          <label>Anthropic API Key</label>
+          <input type="password" id="anthropicKey" placeholder="sk-ant-api03-..." oninput="validarCreds()">
+        </div>
+        <div class="field">
+          <label>GitHub Personal Access Token</label>
+          <input type="password" id="githubToken" placeholder="ghp_..." oninput="validarCreds()">
+        </div>
+      </div>
+      <div class="status-row">
+        <div class="status-dot" id="sd-anthropic"></div>
+        <span id="st-anthropic" style="color:var(--muted)">Anthropic: sin clave</span>
+        <span style="color:var(--border); margin:0 8px">|</span>
+        <div class="status-dot" id="sd-github"></div>
+        <span id="st-github" style="color:var(--muted)">GitHub: sin token</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-row">
+    <div class="stat"><div class="stat-label">ONs en repositorio</div><div class="stat-val blue" id="stat-total">—</div></div>
+    <div class="stat"><div class="stat-label">Cargadas esta sesión</div><div class="stat-val green" id="stat-session">0</div></div>
+    <div class="stat"><div class="stat-label">Errores</div><div class="stat-val warn" id="stat-errors">0</div></div>
+    <div class="stat"><div class="stat-label">Última actualización</div><div class="stat-val" id="stat-fecha" style="font-size:0.9rem; padding-top:8px;">—</div></div>
+  </div>
+
+  <!-- Tickers -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="dot"></div>
+      <div class="panel-title">ONs a cargar (~50 principales por sector)</div>
+      <div style="margin-left:auto; display:flex; gap:8px;">
+        <button class="btn-ghost btn" onclick="seleccionarTodos()">Seleccionar todos</button>
+        <button class="btn-ghost btn" onclick="deseleccionarTodos()">Ninguno</button>
+      </div>
+    </div>
+    <div class="panel-body" id="tickersContainer">
+      <!-- generado por JS -->
+    </div>
+  </div>
+
+  <!-- Acciones -->
+  <div class="panel">
+    <div class="panel-header">
+      <div class="dot warn"></div>
+      <div class="panel-title">Carga masiva</div>
+    </div>
+    <div class="panel-body">
+      <div class="actions-row">
+        <button class="btn btn-blue" id="btnCargar" onclick="cargarSeleccionados()" disabled>
+          ✦ CARGAR SELECCIONADOS CON IA
+        </button>
+        <button class="btn btn-primary" id="btnGuardar" onclick="guardarEnGitHub()" disabled>
+          ↑ GUARDAR EN GITHUB
+        </button>
+        <button class="btn-ghost btn" onclick="verificarGitHub()">
+          ↓ Ver datos en repo
+        </button>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+      <div class="log-box" id="logBox" style="margin-top:12px;">
+        <div class="log-line"><span class="log-time">--:--:--</span><span class="log-info">Panel listo. Ingresá las credenciales y seleccioná las ONs a cargar.</span></div>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+// ─── Lista de ONs por sector ──────────────────────────────────────────────────
+const ONS_POR_SECTOR = {
+  "Energía / Oil & Gas": [
+    { ticker: "YPF3O",  emisor: "YPF" },
+    { ticker: "YCA6O",  emisor: "YPF" },
+    { ticker: "MRCAO",  emisor: "Mercado" },
+    { ticker: "PAMP5D", emisor: "Pampa Energía" },
+    { ticker: "TLCMO",  emisor: "Telecom" },
+    { ticker: "GNCXO",  emisor: "Generación Mediterránea" },
+    { ticker: "CSHCO",  emisor: "Capsa" },
+    { ticker: "EDLCO",  emisor: "Luz y Fuerza" },
+  ],
+  "Telecomunicaciones": [
+    { ticker: "TECPC",  emisor: "Telecom" },
+    { ticker: "CABLO",  emisor: "Cablevision" },
+    { ticker: "TLCMO",  emisor: "Telecom" },
+    { ticker: "TGNO4",  emisor: "TGN" },
+    { ticker: "TGSU2",  emisor: "TGS" },
+  ],
+  "Finanzas / Bancos": [
+    { ticker: "BPATO",  emisor: "Banco Patagonia" },
+    { ticker: "GFGCO",  emisor: "Grupo Financiero Galicia" },
+    { ticker: "BHIPO",  emisor: "Banco Hipotecario" },
+    { ticker: "BCBA1O", emisor: "Banco Ciudad" },
+    { ticker: "SUPVO",  emisor: "Supervielle" },
+    { ticker: "MACO2",  emisor: "Macro" },
+    { ticker: "GSUDO",  emisor: "Grupo Supervielle" },
+  ],
+  "Consumo / Retail": [
+    { ticker: "DISCO",  emisor: "Disco" },
+    { ticker: "VALO4",  emisor: "Cencosud" },
+    { ticker: "IRCP3",  emisor: "IRSA" },
+    { ticker: "CRESUD",emisor: "Cresud" },
+    { ticker: "MOLI2O", emisor: "Molinos Agro" },
+  ],
+  "Industria / Minería": [
+    { ticker: "ALUCO",  emisor: "Aluar" },
+    { ticker: "LPLAO",  emisor: "La Pampa" },
+    { ticker: "MTCGO",  emisor: "Mastellone" },
+    { ticker: "CARAO",  emisor: "Carboclor" },
+    { ticker: "CLARO",  emisor: "Claro" },
+  ],
+  "Infraestructura / Utilities": [
+    { ticker: "EDENO",  emisor: "EDENOR" },
+    { ticker: "EDESO",  emisor: "EDESUR" },
+    { ticker: "AY24D",  emisor: "Aysa" },
+    { ticker: "AUSO",   emisor: "Autopistas del Sol" },
+    { ticker: "TRNFO",  emisor: "Transener" },
+    { ticker: "METROO", emisor: "Metrogas" },
+  ],
+  "Agro": [
+    { ticker: "LEDE2O", emisor: "Ledesma" },
+    { ticker: "MOLAO",  emisor: "Molinos Río de la Plata" },
+    { ticker: "AGRAO",  emisor: "ACA" },
+    { ticker: "SANCOO", emisor: "San Cornelio" },
+  ],
+  "Provincia / Municipal": [
+    { ticker: "PBA25",  emisor: "Pcia. Buenos Aires" },
+    { ticker: "CORU7",  emisor: "Ciudad de Córdoba" },
+    { ticker: "MENDZ",  emisor: "Pcia. Mendoza" },
+    { ticker: "SALTAO", emisor: "Pcia. Salta" },
+  ],
+};
+
+// ─── Estado ───────────────────────────────────────────────────────────────────
+let datosONs = {};       // ticker → datos completos
+let seleccionados = new Set();
+let cargando = false;
+let errCount = 0;
+let okCount  = 0;
+
+// ─── Init ─────────────────────────────────────────────────────────────────────
+window.onload = () => {
+  renderTickers();
+  seleccionarTodos();
+  verificarGitHub();
+};
+
+function renderTickers() {
+  const container = document.getElementById('tickersContainer');
+  container.innerHTML = '';
+
+  for (const [sector, ons] of Object.entries(ONS_POR_SECTOR)) {
+    const h = document.createElement('div');
+    h.className = 'sector-header';
+    h.textContent = sector;
+    container.appendChild(h);
+
+    const grid = document.createElement('div');
+    grid.className = 'tickers-grid';
+
+    ons.forEach(on => {
+      const card = document.createElement('div');
+      card.className = 'ticker-card selected';
+      card.id = 'card-' + on.ticker;
+      card.onclick = () => toggleTicker(on.ticker, card);
+      card.innerHTML = `
+        <div class="tc-ticker">${on.ticker}</div>
+        <div class="tc-emisor">${on.emisor}</div>
+        <div class="tc-sector">${sector.split('/')[0].trim()}</div>
+        <div class="tc-status" id="status-${on.ticker}">○</div>
+      `;
+      grid.appendChild(card);
+      seleccionados.add(on.ticker);
+    });
+
+    container.appendChild(grid);
+  }
+}
+
+function toggleTicker(ticker, card) {
+  if (seleccionados.has(ticker)) {
+    seleccionados.delete(ticker);
+    card.classList.remove('selected');
+  } else {
+    seleccionados.add(ticker);
+    card.classList.add('selected');
+  }
+}
+
+function seleccionarTodos() {
+  document.querySelectorAll('.ticker-card').forEach(c => {
+    c.classList.add('selected');
+    const t = c.id.replace('card-', '');
+    seleccionados.add(t);
+  });
+}
+
+function deseleccionarTodos() {
+  document.querySelectorAll('.ticker-card').forEach(c => c.classList.remove('selected'));
+  seleccionados.clear();
+}
+
+// ─── Validar credenciales ─────────────────────────────────────────────────────
+function validarCreds() {
+  const ak = document.getElementById('anthropicKey').value.trim();
+  const gh = document.getElementById('githubToken').value.trim();
+
+  const sdA = document.getElementById('sd-anthropic');
+  const stA = document.getElementById('st-anthropic');
+  const sdG = document.getElementById('sd-github');
+  const stG = document.getElementById('st-github');
+
+  if (ak.startsWith('sk-ant-') && ak.length > 20) {
+    sdA.className = 'status-dot ok';
+    stA.textContent = 'Anthropic: ✓ clave válida';
+    stA.style.color = 'var(--accent)';
+  } else {
+    sdA.className = 'status-dot err';
+    stA.textContent = ak.length > 0 ? 'Anthropic: formato incorrecto' : 'Anthropic: sin clave';
+    stA.style.color = ak.length > 0 ? 'var(--danger)' : 'var(--muted)';
+  }
+
+  if (gh.startsWith('ghp_') || gh.startsWith('github_pat_')) {
+    sdG.className = 'status-dot ok';
+    stG.textContent = 'GitHub: ✓ token válido';
+    stG.style.color = 'var(--accent)';
+  } else {
+    sdG.className = 'status-dot err';
+    stG.textContent = gh.length > 0 ? 'GitHub: formato incorrecto' : 'GitHub: sin token';
+    stG.style.color = gh.length > 0 ? 'var(--danger)' : 'var(--muted)';
+  }
+
+  const credsOk = (ak.startsWith('sk-ant-') && (gh.startsWith('ghp_') || gh.startsWith('github_pat_')));
+  document.getElementById('btnCargar').disabled = !credsOk;
+}
+
+// ─── Log ──────────────────────────────────────────────────────────────────────
+function log(msg, tipo = 'info') {
+  const box = document.getElementById('logBox');
+  const t = new Date().toLocaleTimeString('es-AR');
+  const line = document.createElement('div');
+  line.className = `log-line fade-in`;
+  line.innerHTML = `<span class="log-time">${t}</span><span class="log-${tipo}">${msg}</span>`;
+  box.appendChild(line);
+  box.scrollTop = box.scrollHeight;
+}
+
+function setProgress(pct) {
+  document.getElementById('progressFill').style.width = pct + '%';
+}
+
+// ─── Cargar ONs con IA ────────────────────────────────────────────────────────
+async function cargarSeleccionados() {
+  if (cargando) return;
+  if (seleccionados.size === 0) { alert('Seleccioná al menos una ON'); return; }
+
+  const ak = document.getElementById('anthropicKey').value.trim();
+  cargando = true;
+  errCount = 0; okCount = 0;
+  document.getElementById('btnCargar').disabled = true;
+  document.getElementById('btnGuardar').disabled = true;
+
+  const lista = [...seleccionados];
+  log(`Iniciando carga de ${lista.length} ONs...`, 'info');
+  setProgress(0);
+
+  for (let i = 0; i < lista.length; i++) {
+    const ticker = lista[i];
+    const card = document.getElementById('card-' + ticker);
+    const statusEl = document.getElementById('status-' + ticker);
+
+    if (card) card.classList.add('loading');
+    if (statusEl) statusEl.textContent = '⏳';
+
+    log(`[${i+1}/${lista.length}] Cargando ${ticker}...`, 'info');
+
+    try {
+      const datos = await obtenerDatosON(ticker, ak);
+      datosONs[ticker] = { ...datos, actualizadoEn: new Date().toISOString() };
+      okCount++;
+      document.getElementById('stat-session').textContent = okCount;
+
+      if (card) { card.classList.remove('loading'); card.classList.add('loaded'); }
+      if (statusEl) statusEl.textContent = '✓';
+
+      // Actualizar emisor en card
+      const emisorEl = card?.querySelector('.tc-emisor');
+      if (emisorEl && datos.emisor) emisorEl.textContent = datos.emisor;
+
+      log(`✓ ${ticker} — ${datos.emisor} | Cupón: ${datos.tasaCupon}% | Vto: ${datos.fechaVencimiento} | Precio: ${datos.precioMercado}%`, 'ok');
+
+    } catch (e) {
+      errCount++;
+      document.getElementById('stat-errors').textContent = errCount;
+      if (card) { card.classList.remove('loading'); card.classList.add('error'); }
+      if (statusEl) statusEl.textContent = '✗';
+      log(`✗ ${ticker} — Error: ${e.message}`, 'err');
+    }
+
+    setProgress(Math.round(((i + 1) / lista.length) * 100));
+
+    // Pausa entre llamadas para no saturar la API
+    if (i < lista.length - 1) await sleep(1200);
+  }
+
+  cargando = false;
+  document.getElementById('btnCargar').disabled = false;
+  document.getElementById('btnGuardar').disabled = Object.keys(datosONs).length === 0;
+
+  log(`─── Carga finalizada: ${okCount} OK, ${errCount} errores ───`, okCount > 0 ? 'ok' : 'err');
+}
+
+async function obtenerDatosON(ticker, apiKey) {
+  const prompt = `Eres un experto en mercado de capitales argentino. Para la ON con ticker "${ticker}" (BYMA/MAE), devuelve ÚNICAMENTE JSON válido sin texto adicional:
+{
+  "ticker": "${ticker}",
+  "emisor": "nombre del emisor",
+  "descripcion": "descripción breve",
+  "moneda": "USD",
+  "tasaCupon": 9.5,
+  "frecuencia": 2,
+  "tipoAmort": "bullet",
+  "fechaVencimiento": "YYYY-MM-DD",
+  "precioMercado": 97.5,
+  "valorNominal": 1000,
+  "calificacion": "AA",
+  "ley": "Nueva York",
+  "sector": "Energía",
+  "observaciones": "notas clave del instrumento"
+}
+Usa tus mejores estimaciones basadas en el mercado argentino. JSON válido siempre.`;
+
+  const resp = await fetch('https://api.anthropic.com/v1/messages', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'x-api-key': apiKey,
+      'anthropic-version': '2023-06-01',
+      'anthropic-dangerous-direct-browser-access': 'true'
+    },
+    body: JSON.stringify({
+      model: 'claude-sonnet-4-20250514',
+      max_tokens: 600,
+      messages: [{ role: 'user', content: prompt }]
+    })
+  });
+
+  if (!resp.ok) {
+    const e = await resp.json().catch(() => ({}));
+    throw new Error(e.error?.message || 'HTTP ' + resp.status);
+  }
+
+  const data = await resp.json();
+  const text = data.content.find(b => b.type === 'text')?.text || '';
+  const clean = text.replace(/```json|```/g, '').trim();
+  return JSON.parse(clean);
+}
+
+// ─── Guardar en GitHub ────────────────────────────────────────────────────────
+async function guardarEnGitHub() {
+  const gh = document.getElementById('githubToken').value.trim();
+  const totalONs = Object.keys(datosONs).length;
+
+  if (totalONs === 0) { alert('No hay datos para guardar'); return; }
+
+  log(`Guardando ${totalONs} ONs en GitHub...`, 'info');
+  document.getElementById('btnGuardar').disabled = true;
+
+  try {
+    // Obtener SHA del archivo si existe (necesario para actualizarlo)
+    let sha = null;
+    const getResp = await fetch('https://api.github.com/repos/richardyag/on-data/contents/ons.json', {
+      headers: { 'Authorization': 'token ' + gh, 'Accept': 'application/vnd.github.v3+json' }
+    });
+    if (getResp.ok) {
+      const existing = await getResp.json();
+      sha = existing.sha;
+      log('Archivo existente encontrado, actualizando...', 'info');
+    } else {
+      log('Archivo nuevo, creando...', 'info');
+    }
+
+    // Preparar contenido
+    const payload = {
+      version: new Date().toISOString(),
+      totalONs,
+      ons: datosONs
+    };
+
+    const content = btoa(unescape(encodeURIComponent(JSON.stringify(payload, null, 2))));
+
+    const body = {
+      message: `Update ONs data — ${totalONs} instrumentos — ${new Date().toLocaleDateString('es-AR')}`,
+      content,
+      ...(sha ? { sha } : {})
+    };
+
+    const putResp = await fetch('https://api.github.com/repos/richardyag/on-data/contents/ons.json', {
+      method: 'PUT',
+      headers: {
+        'Authorization': 'token ' + gh,
+        'Accept': 'application/vnd.github.v3+json',
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(body)
+    });
+
+    if (!putResp.ok) {
+      const err = await putResp.json();
+      throw new Error(err.message || 'Error al guardar');
+    }
+
+    const result = await putResp.json();
+    log(`✓ Guardado exitosamente en GitHub`, 'ok');
+    log(`✓ URL: https://raw.githubusercontent.com/richardyag/on-data/main/ons.json`, 'ok');
+
+    document.getElementById('stat-fecha').textContent = new Date().toLocaleTimeString('es-AR');
+    document.getElementById('btnGuardar').disabled = false;
+    await verificarGitHub();
+
+  } catch (e) {
+    log(`✗ Error al guardar en GitHub: ${e.message}`, 'err');
+    document.getElementById('btnGuardar').disabled = false;
+  }
+}
+
+// ─── Verificar datos en GitHub ────────────────────────────────────────────────
+async function verificarGitHub() {
+  try {
+    const url = 'https://raw.githubusercontent.com/richardyag/on-data/main/ons.json?t=' + Date.now();
+    const resp = await fetch(url);
+    if (!resp.ok) {
+      document.getElementById('stat-total').textContent = '0';
+      log('Repositorio vacío o sin datos aún.', 'warn');
+      return;
+    }
+    const data = await resp.json();
+    const total = data.totalONs || Object.keys(data.ons || {}).length;
+    document.getElementById('stat-total').textContent = total;
+
+    const fecha = data.version ? new Date(data.version).toLocaleDateString('es-AR') : '—';
+    document.getElementById('stat-fecha').textContent = fecha;
+
+    // Marcar las que ya están cargadas
+    if (data.ons) {
+      Object.keys(data.ons).forEach(t => {
+        const card = document.getElementById('card-' + t);
+        const statusEl = document.getElementById('status-' + t);
+        if (card && !card.classList.contains('error')) {
+          card.classList.add('loaded');
+          if (statusEl) statusEl.textContent = '✓';
+        }
+      });
+    }
+
+    log(`Repositorio: ${total} ONs cargadas. Última actualización: ${fecha}`, 'ok');
+  } catch (e) {
+    document.getElementById('stat-total').textContent = '?';
+  }
+}
+
+function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+</script>
+</body>
+</html>
