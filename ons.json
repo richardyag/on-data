@@ -38,8 +38,8 @@
     },
     "MRCAO": {
       "ticker": "MRCAO",
-      "emisor": "Mercado Libre",
-      "descripcion": "Obligación Negociable - Mercado Libre Serie A",
+      "emisor": "Generación Mediterránea S.A.",
+      "descripcion": "Obligación Negociable - Generación Mediterránea Serie A",
       "moneda": "USD",
       "tasaCupon": 7.5,
       "frecuencia": 2,
